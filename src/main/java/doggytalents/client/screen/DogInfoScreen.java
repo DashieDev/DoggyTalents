@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 
+import doggytalents.ChopinLogger;
 import doggytalents.DoggyAccessories;
 import doggytalents.DoggyTalents2;
 import doggytalents.api.DoggyTalentsAPI;
@@ -18,7 +19,9 @@ import doggytalents.api.registry.Talent;
 import doggytalents.client.DogTextureManager;
 import doggytalents.common.config.ConfigValues;
 import doggytalents.common.entity.DogEntity;
+import doggytalents.common.entity.stats.StatsTracker;
 import doggytalents.common.network.PacketHandler;
+import doggytalents.common.network.packet.data.DogData;
 import doggytalents.common.network.packet.data.DogModeData;
 import doggytalents.common.network.packet.data.DogNameData;
 import doggytalents.common.network.packet.data.DogObeyData;
@@ -26,8 +29,10 @@ import doggytalents.common.network.packet.data.DogTalentData;
 import doggytalents.common.network.packet.data.DogTextureData;
 import doggytalents.common.network.packet.data.FriendlyFireData;
 import doggytalents.common.network.packet.data.SendSkinData;
+import doggytalents.common.network.packet.data.StatsRequestData;
 import doggytalents.common.util.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.Widget;
@@ -35,10 +40,12 @@ import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.potion.Effects;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.fml.network.PacketDistributor;
@@ -46,6 +53,7 @@ import net.minecraftforge.fml.network.PacketDistributor;
 public class DogInfoScreen extends Screen {
 
     public final DogEntity dog;
+    public final StatsTracker dogStat;
     public final PlayerEntity player;
 
     private int currentPage = 0;
@@ -53,16 +61,18 @@ public class DogInfoScreen extends Screen {
     private List<Widget> talentWidgets = new ArrayList<>(16);
 
     private Button leftBtn, rightBtn;
+    private Button PrevPage, NextPage;
 
     private List<Talent> talentList;
     private List<ResourceLocation> customSkinList;
 
     public int textureIndex;
 
-    public DogInfoScreen(DogEntity dog, PlayerEntity player) {
+    public DogInfoScreen(DogEntity dog, PlayerEntity player, StatsTracker dogStat) {
         super(new TranslationTextComponent("doggytalents.screen.dog.title"));
         this.dog = dog;
         this.player = player;
+        this.dogStat = dogStat; 
         this.talentList = DoggyTalentsAPI.TALENTS
                 .getValues()
                 .stream()
@@ -74,9 +84,10 @@ public class DogInfoScreen extends Screen {
         this.textureIndex = this.textureIndex >= 0 ? this.textureIndex : 0;
     }
 
-    public static void open(DogEntity dog) {
+    public static void open(DogEntity dog, StatsTracker statsTracker) {
+        ChopinLogger.LOGGER.info(dog.getName().getString() + " 's mode(from doginfoscreen::open) : " + dog.getMode().toString());
         Minecraft mc = Minecraft.getInstance();
-        mc.setScreen(new DogInfoScreen(dog, mc.player));
+        mc.setScreen(new DogInfoScreen(dog, mc.player, statsTracker));
     }
 
     @Override
@@ -91,7 +102,7 @@ public class DogInfoScreen extends Screen {
             PacketHandler.send(PacketDistributor.SERVER.noArg(), new DogNameData(DogInfoScreen.this.dog.getId(), text));
         });
         nameTextField.setFocus(false);
-        nameTextField.setMaxLength(32);
+        nameTextField.setMaxLength(128);
 
         if (this.dog.hasCustomName()) {
             nameTextField.setValue(this.dog.getCustomName().getContents());
@@ -117,7 +128,7 @@ public class DogInfoScreen extends Screen {
 
         this.addButton(attackPlayerBtn);
 
-        //if (ConfigValues.USE_DT_TEXTURES) {
+        if (ConfigValues.USE_DT_TEXTURES) {
             Button addBtn = new Button(this.width - 42, topY + 30, 20, 20, new StringTextComponent("+"), (btn) -> {
                 this.textureIndex += 1;
                 this.textureIndex %= this.customSkinList.size();
@@ -134,7 +145,7 @@ public class DogInfoScreen extends Screen {
 
             this.addButton(addBtn);
             this.addButton(lessBtn);
-        //}
+        }
 
 
         Button modeBtn = new Button(topX + 40, topY + 25, 60, 20, new TranslationTextComponent(this.dog.getMode().getUnlocalisedName()), button -> {
@@ -211,6 +222,16 @@ public class DogInfoScreen extends Screen {
             this.addButton(this.leftBtn);
             this.addButton(this.rightBtn);
         }
+        this.PrevPage = new Button(2, this.height-22, 20, 20, new StringTextComponent("<"), btn -> {   }  );
+        this.NextPage = new Button(this.width-22, this.height-22, 20, 20, new StringTextComponent(">"), 
+            btn -> {
+                PacketHandler.send(PacketDistributor.SERVER.noArg(), new StatsRequestData(dog.getId()));
+                Minecraft.getInstance().setScreen(new DogStatsScreen(this.dog, this.player, this.dogStat)); 
+            }    
+        );
+
+        this.addButton(this.PrevPage);
+        this.addButton(this.NextPage);
     }
 
     private void setDogTexture(ResourceLocation rl) {
@@ -295,6 +316,7 @@ public class DogInfoScreen extends Screen {
         }
 
         //this.font.drawString(I18n.format("doggui.health") + healthState, this.width - 160, topY - 110, 0xFFFFFF);
+        this.renderHealthBar(stack, dog, this.width - 160, topY - 110); 
         this.font.draw(stack, I18n.get("doggui.speed") + " " + speedValue, this.width - 160, topY - 100, 0xFFFFFF);
         this.font.draw(stack, I18n.get("doggui.owner") + " " + tamedString, this.width - 160, topY - 90, 0xFFFFFF);
         this.font.draw(stack, I18n.get("doggui.age") + " " + ageString, this.width - 160, topY - 80, 0xFFFFFF);
@@ -343,6 +365,67 @@ public class DogInfoScreen extends Screen {
        // RenderHelper.enableStandardItemLighting();
     }
 
+    private void renderHealthBar(MatrixStack stack, DogEntity dog, int ati, int atj) {
+        float i = dog.getHealth();
+        int i1 = ati;
+        int k1 = atj;
+        float f = (float)dog.getAttributeValue(Attributes.MAX_HEALTH);
+        int l1 = MathHelper.ceil(dog.getAbsorptionAmount());
+        int i2 = MathHelper.ceil((f + (float)l1) / 2.0F / 10.0F);
+        int j2 = Math.max(10 - (i2 - 2), 3);
+        int k2 = k1 - (i2 - 1) * j2 - 10;
+        int l2 = k1 - 10;
+        int i3 = l1;
+        int j3 = dog.getArmorValue();
+        int k3 = -1;
+        if (dog.hasEffect(Effects.REGENERATION)) {
+           k3 = dog.tickCount % MathHelper.ceil(f + 5.0F);
+        }
+        this.minecraft.getProfiler().popPush("health");
+
+         for(int l5 = MathHelper.ceil((f + (float)l1) / 2.0F) - 1; l5 >= 0; --l5) {
+            int i6 = 16;
+            if (dog.hasEffect(Effects.POISON)) {
+               i6 += 36;
+            } else if (dog.hasEffect(Effects.WITHER)) {
+               i6 += 72;
+            }
+
+            int j4 = 0;
+
+            int k4 = MathHelper.ceil((float)(l5 + 1) / 10.0F) - 1;
+            int l4 = i1 + l5 % 10 * 8;
+            int i5 = k1 - k4 * j2;
+
+            if (i3 <= 0 && l5 == k3) {
+               i5 -= 2;
+            }
+
+            int j5 = 0;
+
+            this.blit(stack, l4, i5, 16 + j4 * 9, 9 * j5, 9, 9);
+
+            if (i3 > 0) {
+               if (i3 == l1 && l1 % 2 == 1) {
+                  this.blit(stack, l4, i5, i6 + 153, 9 * j5, 9, 9);
+                  --i3;
+               } else {
+                  this.blit(stack, l4, i5, i6 + 144, 9 * j5, 9, 9);
+                  i3 -= 2;
+               }
+            } else {
+               if (l5 * 2 + 1 < i) {
+                  this.blit(stack, l4, i5, i6 + 36, 9 * j5, 9, 9);
+               }
+
+               if (l5 * 2 + 1 == i) {
+                  this.blit(stack, l4, i5, i6 + 45, 9 * j5, 9, 9);
+               }
+            }
+         }
+         this.minecraft.getProfiler().pop();
+    }
+
     @Override
     public void removed() {
         super.removed();
@@ -368,5 +451,86 @@ public class DogInfoScreen extends Screen {
             this.talent = talent;
         }
 
+    }
+
+    private class DogStatsScreen extends Screen {
+        private Button PrevPage, NextPage;
+        private DogEntity dog; 
+        private PlayerEntity player;
+        private StatsTracker dogStat;
+        DogStatsScreen(DogEntity dog, PlayerEntity player, StatsTracker statsTracker) {
+            super(new TranslationTextComponent("doggytalents.screen.dog.stats.title"));
+            this.dog = dog; 
+            this.player = player; 
+            this.dogStat = statsTracker;
+        }
+        @Override 
+        public void init() {
+            this.PrevPage = new Button(2, this.height-22, 20, 20, new StringTextComponent("<"), 
+                btn -> Minecraft.getInstance().setScreen(new DogInfoScreen(this.dog, this.player, this.dogStat) )
+            );
+            this.NextPage = new Button(this.width-22, this.height-22, 20, 20, new StringTextComponent(">"), 
+                btn -> {} 
+            );
+
+            this.addButton(this.PrevPage);
+            this.addButton(this.NextPage);
+        }
+        @Override
+        public void render(MatrixStack stack, int mouseX, int mouseY, float partialTicks) {
+            //Background
+            this.renderBackground(stack);
+            super.render(stack, mouseX, mouseY, partialTicks);
+            StringTextComponent title_stats = new StringTextComponent("Statistics");
+            
+            title_stats.setStyle(
+                Style.EMPTY
+                .withBold(true)
+                .withUnderlined(true)
+            );
+            
+            this.font.draw(stack, title_stats , 2, 2, 0xFF10F9);
+
+            /*
+                private float damageDealt = 0;
+                private int distanceOnWater = 0;
+                private int distanceInWater = 0;
+                private int distanceSprinting = 0;
+                private int distanceSneaking = 0;
+                private int distanceWalking = 0;
+                private int distanceRidden = 0;
+            */
+            
+            this.font.draw(stack, "Damage dealt : " + Float.toString(
+                this.dog.statsTracker.getDamageDealt()
+            ), 2, 13, 0xFFFFFF );
+            try {
+            this.font.draw(stack, "Distance on water : " + Integer.toString(
+                this.dogStat.getDistanceOnWater()
+            ), 2, 24, 0xFFFFFF );
+            this.font.draw(stack, "Distance in water : " + Integer.toString(
+                this.dogStat.getDistanceInWater()
+            ), 2, 35, 0xFFFFFF );
+            this.font.draw(stack, "Distance ridden : " + Integer.toString(
+                this.dogStat.getDistanceRidden()
+            ), 2, 46, 0xFFFFFF );
+            this.font.draw(stack, "Distance walking : " + Integer.toString(
+                this.dogStat.getDistanceWalking()
+            ), 2, 57, 0xFFFFFF );
+            this.font.draw(stack, "Death counts : " + Integer.toString(
+                this.dogStat.getDeathCounts()
+            ), 2, 68, 0xff0000 );
+            } catch (Exception e) {
+                ChopinLogger.LOGGER.info(e.toString()); 
+            }
+            /*
+            this.font.draw(stack, "Damage dealt : " + Float.toString(
+                this.dog.statsTracker.getDamageDealt()
+            ), 2, 68, 0xFFFFFF );
+            this.font.draw(stack, "Damage dealt : " + Float.toString(
+                this.dog.statsTracker.getDamageDealt()
+            ), 2, 79, 0xFFFFFF );
+            */
+        }
     }
 }

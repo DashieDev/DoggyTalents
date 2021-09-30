@@ -17,7 +17,8 @@ public class DogTalentPacket extends DogPacket<DogTalentData> {
     public void encode(DogTalentData data, PacketBuffer buf) {
         super.encode(data, buf);
         buf.writeRegistryIdUnsafe(DoggyTalentsAPI.TALENTS, data.talent);
-    }
+    } 
+    //Talent
 
     @Override
     public DogTalentData decode(PacketBuffer buf) {

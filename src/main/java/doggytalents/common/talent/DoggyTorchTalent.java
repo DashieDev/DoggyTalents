@@ -34,8 +34,8 @@ public class DoggyTorchTalent extends TalentInstance {
                 // If null might be because no pack puppy
                 if (this.level() >= 5) {
                     dogIn.level.setBlockAndUpdate(pos, torchState);
-                }
-                else if (inventory != null) { // If null might be because no pack puppy
+                    
+                } else if (inventory != null) { // If null might be because no pack puppy
                     Pair<ItemStack, Integer> foundDetails = InventoryUtil.findStack(inventory, (stack) -> stack.getItem() == Items.TORCH);
                     if (foundDetails != null && !foundDetails.getLeft().isEmpty()) {
                         ItemStack torchStack = foundDetails.getLeft();

@@ -6,6 +6,7 @@ import java.util.function.Predicate;
 
 import com.google.common.collect.Maps;
 
+import doggytalents.ChopinLogger;
 import doggytalents.common.util.Cache;
 import doggytalents.common.util.NBTUtil;
 import net.minecraft.entity.Entity;
@@ -26,6 +27,7 @@ public class StatsTracker {
     private int distanceSneaking = 0;
     private int distanceWalking = 0;
     private int distanceRidden = 0;
+    private int deathCounts = 0;
 
     // Cache
     private final Cache<Integer> killCount = Cache.make(this::getTotalKillCountInternal);
@@ -46,6 +48,7 @@ public class StatsTracker {
         compound.putInt("distanceSneaking", this.distanceSneaking);
         compound.putInt("distanceWalking", this.distanceWalking);
         compound.putInt("distanceRidden", this.distanceRidden);
+        compound.putInt("deathCounts", this.deathCounts);
     }
 
     public void readAdditional(CompoundNBT compound) {
@@ -62,6 +65,7 @@ public class StatsTracker {
         this.distanceSneaking = compound.getInt("distanceSneaking");
         this.distanceWalking = compound.getInt("distanceWalking");
         this.distanceRidden = compound.getInt("distanceRidden");
+        this.deathCounts = compound.getInt("deathCounts");
     }
 
     public int getKillCountFor(EntityType<?> type) {
@@ -124,5 +128,56 @@ public class StatsTracker {
 
     public void increaseDistanceRidden(int distance) {
         this.distanceRidden += distance;
+    }
+    public void increaseDeathCounts() {
+        ++this.deathCounts;
+    } 
+
+
+    public void updateStats(StatsObject s) {
+        this.damageDealt = s.damageDealt; 
+        this.distanceOnWater = s.distanceOnWater;
+        this.distanceInWater = s.distanceInWater;
+        this.distanceSprinting = s.distanceSprinting;
+        this.distanceSneaking = s.distanceSneaking;
+        this.distanceWalking = s.distanceWalking;
+        this.distanceRidden = s.distanceRidden;
+        this.deathCounts = s.deathCounts; 
+    }
+    public StatsObject getStatsObject() {
+        StatsObject s = new StatsObject();
+        s.damageDealt = this.damageDealt; 
+        s.distanceOnWater = this.distanceOnWater;
+        s.distanceInWater = this.distanceInWater;
+        s.distanceSprinting = this.distanceSprinting;
+        s.distanceSneaking = this.distanceSneaking;
+        s.distanceWalking = this.distanceWalking;
+        s.distanceRidden = this.distanceRidden;
+        s.deathCounts = this.deathCounts;
+        return s;
+    }
+    public float getDamageDealt() {
+        return this.damageDealt;
+    }
+    public int getDistanceOnWater() {
+        return this.distanceOnWater;
+    }
+    public int getDistanceInWater() {
+        return this.distanceInWater;
+    }
+    public int getDistanceSprinting() {
+        return this.distanceSprinting;
+    }
+    public int getDistanceSneaking() {
+        return this.distanceSneaking;
+    }
+    public int getDistanceWalking() {
+        return this.distanceWalking;
+    }
+    public int getDistanceRidden() {
+        return this.distanceRidden;
+    }
+    public int getDeathCounts() {
+        return this.deathCounts;
     }
 }

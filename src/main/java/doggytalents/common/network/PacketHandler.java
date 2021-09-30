@@ -7,10 +7,12 @@ import doggytalents.common.network.packet.DogNamePacket;
 import doggytalents.common.network.packet.DogObeyPacket;
 import doggytalents.common.network.packet.DogTalentPacket;
 import doggytalents.common.network.packet.DogTexturePacket;
+import doggytalents.common.network.packet.FetchStatPacket;
 import doggytalents.common.network.packet.FriendlyFirePacket;
 import doggytalents.common.network.packet.OpenDogScreenPacket;
 import doggytalents.common.network.packet.RequestSkinPacket;
 import doggytalents.common.network.packet.SendSkinPacket;
+import doggytalents.common.network.packet.data.DogData;
 import doggytalents.common.network.packet.data.DogInventoryPageData;
 import doggytalents.common.network.packet.data.DogModeData;
 import doggytalents.common.network.packet.data.DogNameData;
@@ -21,6 +23,9 @@ import doggytalents.common.network.packet.data.FriendlyFireData;
 import doggytalents.common.network.packet.data.OpenDogScreenData;
 import doggytalents.common.network.packet.data.RequestSkinData;
 import doggytalents.common.network.packet.data.SendSkinData;
+import doggytalents.common.network.packet.data.StatsData;
+import doggytalents.common.network.packet.data.StatsRequestData;
+import doggytalents.common.network.packet.RequestUpdateStats;
 import net.minecraftforge.fml.network.PacketDistributor;
 
 public final class PacketHandler {
@@ -39,6 +44,8 @@ public final class PacketHandler {
         registerPacket(new OpenDogScreenPacket(), OpenDogScreenData.class);
         registerPacket(new DogInventoryPagePacket(), DogInventoryPageData.class);
         registerPacket(new DogTexturePacket(), DogTextureData.class);
+        registerPacket(new RequestUpdateStats(), StatsRequestData.class);
+        registerPacket(new FetchStatPacket(), StatsData.class);
     }
 
     public static <MSG> void send(PacketDistributor.PacketTarget target, MSG message) {

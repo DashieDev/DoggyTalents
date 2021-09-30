@@ -18,6 +18,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 
+import doggytalents.ChopinLogger;
 import doggytalents.DoggyAccessories;
 import doggytalents.DoggyAttributes;
 import doggytalents.DoggyBlocks;
@@ -105,6 +106,7 @@ import net.minecraft.particles.ParticleTypes;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.server.management.PreYggdrasilConverter;
+import net.minecraft.stats.Stats;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.ActionResult;
@@ -154,6 +156,7 @@ public class DogEntity extends AbstractDogEntity {
     private static final Cache<DataParameter<EnumMode>> MODE = Cache.make(() -> (DataParameter<EnumMode>) EntityDataManager.defineId(DogEntity.class, DoggySerializers.MODE_SERIALIZER.get().getSerializer()));
     private static final Cache<DataParameter<DimensionDependantArg<Optional<BlockPos>>>> DOG_BED_LOCATION = Cache.make(() -> (DataParameter<DimensionDependantArg<Optional<BlockPos>>>) EntityDataManager.defineId(DogEntity.class, DoggySerializers.BED_LOC_SERIALIZER.get().getSerializer()));
     private static final Cache<DataParameter<DimensionDependantArg<Optional<BlockPos>>>> DOG_BOWL_LOCATION = Cache.make(() -> (DataParameter<DimensionDependantArg<Optional<BlockPos>>>) EntityDataManager.defineId(DogEntity.class, DoggySerializers.BED_LOC_SERIALIZER.get().getSerializer()));
+    //private static final Cache<DataParameter<statsTracker>> DOG_STATS = Cache.make(() -> (DataParameter<StatsTracker>) EntityDataManager.defineId(DogEntity.class, p_187226_1_));
 
     public static final void initDataParameters() {
         ACCESSORIES.get();
@@ -189,6 +192,7 @@ public class DogEntity extends AbstractDogEntity {
     protected float jumpPower;
 
     protected BlockPos targetBlock;
+    public float damagedealt;
 
     public DogEntity(EntityType<? extends DogEntity> type, World worldIn) {
         super(type, worldIn);
@@ -221,7 +225,7 @@ public class DogEntity extends AbstractDogEntity {
         //this.goalSelector.addGoal(1, new PatrolAreaGoal(this));
         this.goalSelector.addGoal(2, new SitGoal(this));
         //this.goalSelector.addGoal(3, new WolfEntity.AvoidEntityGoal(this, LlamaEntity.class, 24.0F, 1.5D, 1.5D));
-        this.goalSelector.addGoal(4, new LeapAtTargetGoal(this, 0.4F));
+        //this.goalSelector.addGoal(4, new LeapAtTargetGoal(this, 0.4F));
         this.goalSelector.addGoal(5, new MeleeAttackGoal(this, 1.0D, true));
         this.goalSelector.addGoal(5, new MoveToBlockGoal(this));
         this.goalSelector.addGoal(5, new DogWanderGoal(this, 1.0D));
@@ -498,7 +502,8 @@ public class DogEntity extends AbstractDogEntity {
             if (stack.getItem() == Items.STICK && this.canInteract(player)) {
 
                 if (this.level.isClientSide) {
-                    DogInfoScreen.open(this);
+                    ChopinLogger.LOGGER.info( "at dogentity " + Float.toString(this.statsTracker.getDamageDealt()));
+                    DogInfoScreen.open(this, this.statsTracker);
                 }
 
                 return ActionResultType.SUCCESS;
@@ -514,7 +519,7 @@ public class DogEntity extends AbstractDogEntity {
                         this.navigation.stop();
                         this.setTarget((LivingEntity) null);
                         this.setOrderedToSit(true);
-                        this.setHealth(20.0F);
+                        this.setHealth(20.0F);  
                         this.level.broadcastEntityEvent(this, doggytalents.common.lib.Constants.EntityState.WOLF_HEARTS);
                     } else {
                         this.level.broadcastEntityEvent(this, doggytalents.common.lib.Constants.EntityState.WOLF_SMOKE);
@@ -652,6 +657,7 @@ public class DogEntity extends AbstractDogEntity {
 
         return super.decreaseAirSupply(air);
     }
+    
 
     @Override
     protected int increaseAirSupply(int currentAir) {
@@ -767,6 +773,7 @@ public class DogEntity extends AbstractDogEntity {
             Entity entity = source.getEntity();
             // Must be checked here too as hitByEntity only applies to when the dog is
             // directly hit not indirect damage like sweeping effect etc
+            // Currently dog cannot handle sweeping effect when FF is off hahahahahahahahahaha
             if (entity instanceof PlayerEntity && !this.canPlayersAttack()) {
                 return false;
             }
@@ -943,12 +950,19 @@ public class DogEntity extends AbstractDogEntity {
     @Override
     public void setTame(boolean tamed) {
         super.setTame(tamed);
+        ChopinLogger.LOGGER.info("in setTame");
+        for (IDogAlteration x : this.alterations) {
+            ChopinLogger.LOGGER.info(
+                x.toString()                 
+            );
+        }
         if (tamed) {
            this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(20.0D);
            this.setHealth(20.0F);
         } else {
            this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(8.0D);
         }
+        
 
         this.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(4.0D);
      }
@@ -1131,6 +1145,8 @@ public class DogEntity extends AbstractDogEntity {
     public void die(DamageSource cause) {
         this.wetSource = null;
         this.finishShaking();
+        
+        this.statsTracker.increaseDeathCounts();
 
         this.alterations.forEach((alter) -> alter.onDeath(this, cause));
         super.die(cause);
@@ -1323,6 +1339,7 @@ public class DogEntity extends AbstractDogEntity {
         }
 
         super.load(compound);
+        ChopinLogger.LOGGER.info(this.getName().getString() + " is loaded !");
     }
 
     @Override
@@ -1473,6 +1490,8 @@ public class DogEntity extends AbstractDogEntity {
 
         try {
             this.statsTracker.readAdditional(compound);
+            this.damagedealt = this.statsTracker.getDamageDealt();
+            //ChopinLogger.LOGGER.info( this.getName().getString() + " dealt : " + Float.toString(this.statsTracker.getDamageDealt())); 
         } catch (Exception e) {
             DoggyTalents2.LOGGER.error("Failed to load stats tracker: " + e.getMessage());
             e.printStackTrace();
@@ -2254,5 +2273,9 @@ public class DogEntity extends AbstractDogEntity {
 
     public BlockPos getTargetBlock() {
         return this.targetBlock;
+    }
+
+    public void teleportToOwner() {
+        EntityUtil.tryToTeleportNearEntity(this, this.getNavigation(), this.getOwner(), 4);
     }
 }

@@ -2,6 +2,9 @@ package doggytalents.common.network.packet;
 
 import java.util.function.Supplier;
 
+import doggytalents.ChopinLogger;
+import doggytalents.DoggyTalents;
+import doggytalents.api.DoggyTalentsAPI;
 import doggytalents.common.entity.DogEntity;
 import doggytalents.common.network.IPacket;
 import doggytalents.common.network.packet.data.DogData;

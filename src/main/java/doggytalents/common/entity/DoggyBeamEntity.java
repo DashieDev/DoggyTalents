@@ -52,7 +52,7 @@ public class DoggyBeamEntity extends ThrowableEntity implements IEntityAdditiona
                     .filter(d -> d.isMode(EnumMode.AGGRESIVE, EnumMode.TACTICAL, EnumMode.BERSERKER))
                     .filter(d -> d.canInteract(livingThrower))
                     .filter(d -> d != livingEntity && d.wantsToAttack(livingEntity, d.getOwner()))
-                    .filter(d -> d.distanceTo(entityHit) < EntityUtil.getFollowRange(d))
+                    //.filter(d -> d.distanceTo(entityHit) < EntityUtil.getFollowRange(d))
                     .forEach(d -> d.setTarget(livingEntity));
             }
 
