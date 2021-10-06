@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -30,10 +31,14 @@ import doggytalents.common.network.packet.data.DogTextureData;
 import doggytalents.common.network.packet.data.FriendlyFireData;
 import doggytalents.common.network.packet.data.SendSkinData;
 import doggytalents.common.network.packet.data.StatsRequestData;
+import doggytalents.common.talent.RoaringGaleTalent;
 import doggytalents.common.util.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.IngameGui;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.inventory.InventoryScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
@@ -85,7 +90,7 @@ public class DogInfoScreen extends Screen {
     }
 
     public static void open(DogEntity dog, StatsTracker statsTracker) {
-        ChopinLogger.LOGGER.info(dog.getName().getString() + " 's mode(from doginfoscreen::open) : " + dog.getMode().toString());
+        ChopinLogger.LOGGER.info(dog.getName().getString() + " 's roar cooldown from client: " + Integer.toString( (Integer) dog.getDataOrDefault(RoaringGaleTalent.COOLDOWN, 0) )); 
         Minecraft mc = Minecraft.getInstance();
         mc.setScreen(new DogInfoScreen(dog, mc.player, statsTracker));
     }
@@ -156,6 +161,7 @@ public class DogInfoScreen extends Screen {
             } else {
                 button.setMessage(new TranslationTextComponent(mode.getUnlocalisedName()));
             }
+            //dog.getName();
 
             PacketHandler.send(PacketDistributor.SERVER.noArg(), new DogModeData(DogInfoScreen.this.dog.getId(), mode));
         }) {
@@ -316,7 +322,7 @@ public class DogInfoScreen extends Screen {
         }
 
         //this.font.drawString(I18n.format("doggui.health") + healthState, this.width - 160, topY - 110, 0xFFFFFF);
-        this.renderHealthBar(stack, dog, this.width - 160, topY - 110); 
+        this.renderHealthBar(stack, this.dog, this.width - 160, topY - 110); 
         this.font.draw(stack, I18n.get("doggui.speed") + " " + speedValue, this.width - 160, topY - 100, 0xFFFFFF);
         this.font.draw(stack, I18n.get("doggui.owner") + " " + tamedString, this.width - 160, topY - 90, 0xFFFFFF);
         this.font.draw(stack, I18n.get("doggui.age") + " " + ageString, this.width - 160, topY - 80, 0xFFFFFF);
@@ -324,6 +330,7 @@ public class DogInfoScreen extends Screen {
         if (ConfigValues.DOG_GENDER) {
             this.font.draw(stack, I18n.get("doggui.gender") + " "+ I18n.get(this.dog.getGender().getUnlocalisedName()), this.width - 160, topY - 60, 0xFFFFFF);
         }
+        this.font.draw(stack, "Xp : " + Integer.toString( this.dog.getDogExperiencePoint() ), this.width - 160, topY - 50, 0x07ad02);
 
         this.font.draw(stack, I18n.get("doggui.newname"), topX - 100, topY + 38, 4210752);
         this.font.draw(stack, I18n.get("doggui.level") + " " + this.dog.getLevel().getLevel(Type.NORMAL), topX - 65, topY + 75, 0xFF10F9);
@@ -365,8 +372,11 @@ public class DogInfoScreen extends Screen {
        // RenderHelper.enableStandardItemLighting();
     }
 
+    
+    private Random random = new Random(); 
     private void renderHealthBar(MatrixStack stack, DogEntity dog, int ati, int atj) {
-        float i = dog.getHealth();
+        this.random.setSeed((long)(dog.tickCount * 312871));
+        int i = MathHelper.ceil(dog.getHealth());
         int i1 = ati;
         int k1 = atj;
         float f = (float)dog.getAttributeValue(Attributes.MAX_HEALTH);
@@ -381,7 +391,9 @@ public class DogInfoScreen extends Screen {
         if (dog.hasEffect(Effects.REGENERATION)) {
            k3 = dog.tickCount % MathHelper.ceil(f + 5.0F);
         }
-        this.minecraft.getProfiler().popPush("health");
+        this.minecraft.getTextureManager().bind(GUI_ICONS_LOCATION);
+        //this.minecraft.getProfiler().push("health");
+        //not gonna display effect now becuz there is an client entity effect sync problem
 
          for(int l5 = MathHelper.ceil((f + (float)l1) / 2.0F) - 1; l5 >= 0; --l5) {
             int i6 = 16;
@@ -396,6 +408,9 @@ public class DogInfoScreen extends Screen {
             int k4 = MathHelper.ceil((float)(l5 + 1) / 10.0F) - 1;
             int l4 = i1 + l5 % 10 * 8;
             int i5 = k1 - k4 * j2;
+            if (i <= 4) {
+                i5 += this.random.nextInt(2);
+            }
 
             if (i3 <= 0 && l5 == k3) {
                i5 -= 2;
@@ -403,8 +418,8 @@ public class DogInfoScreen extends Screen {
 
             int j5 = 0;
 
-            this.blit(stack, l4, i5, 16 + j4 * 9, 9 * j5, 9, 9);
-
+            this.blit(stack, l4, i5, 16, 0, 9, 9);
+            
             if (i3 > 0) {
                if (i3 == l1 && l1 % 2 == 1) {
                   this.blit(stack, l4, i5, i6 + 153, 9 * j5, 9, 9);
@@ -416,15 +431,48 @@ public class DogInfoScreen extends Screen {
             } else {
                if (l5 * 2 + 1 < i) {
                   this.blit(stack, l4, i5, i6 + 36, 9 * j5, 9, 9);
-               }
-
+               } 
+               
                if (l5 * 2 + 1 == i) {
                   this.blit(stack, l4, i5, i6 + 45, 9 * j5, 9, 9);
                }
             }
+        
          }
-         this.minecraft.getProfiler().pop();
+         
+         //this.minecraft.getProfiler().pop();
     }
+    
+    /*
+    public void renderDoggyExperienceBar(MatrixStack p_238454_1_, int x, int y) {
+        this.minecraft.getProfiler().push("expBar");
+        this.minecraft.getTextureManager().bind(AbstractGui.GUI_ICONS_LOCATION);
+        int i = this.minecraft.player.getXpNeededForNextLevel();
+        if (i > 0) {
+           int j = 182;
+           int k = (int)(this.minecraft.player.experienceProgress * 183.0F);
+           this.blit(p_238454_1_, x, y, 0, 64, 182, 5);
+           if (k > 0) {
+              this.blit(p_238454_1_, x, y, 0, 69, k, 5);
+           }
+        }
+  
+        this.minecraft.getProfiler().pop();
+        if (this.minecraft.player.experienceLevel > 0) {
+           this.minecraft.getProfiler().push("expLevel");
+           String s = "" + this.minecraft.player.experienceLevel;
+           int i1 = (this.screenWidth - this.getFont().width(s)) / 2;
+           int j1 = this.screenHeight - 31 - 4;
+           this.getFont().draw(p_238454_1_, s, (float)(i1 + 1), (float)j1, 0);+
+           this.getFont().draw(p_238454_1_, s, (float)(i1 - 1), (float)j1, 0);
+           this.getFont().draw(p_238454_1_, s, (float)i1, (float)(j1 + 1), 0);
+           this.getFont().draw(p_238454_1_, s, (float)i1, (float)(j1 - 1), 0);
+           this.getFont().draw(p_238454_1_, s, (float)i1, (float)j1, 8453920);
+           this.minecraft.getProfiler().pop();
+        }
+  
+     }
+     */
 
     @Override
     public void removed() {
@@ -458,7 +506,7 @@ public class DogInfoScreen extends Screen {
         private DogEntity dog; 
         private PlayerEntity player;
         private StatsTracker dogStat;
-        DogStatsScreen(DogEntity dog, PlayerEntity player, StatsTracker statsTracker) {
+        public DogStatsScreen(DogEntity dog, PlayerEntity player, StatsTracker statsTracker) {
             super(new TranslationTextComponent("doggytalents.screen.dog.stats.title"));
             this.dog = dog; 
             this.player = player; 
@@ -470,12 +518,18 @@ public class DogInfoScreen extends Screen {
                 btn -> Minecraft.getInstance().setScreen(new DogInfoScreen(this.dog, this.player, this.dogStat) )
             );
             this.NextPage = new Button(this.width-22, this.height-22, 20, 20, new StringTextComponent(">"), 
-                btn -> {} 
+                btn -> Minecraft.getInstance().setScreen(new DogAmourEquipScreen(this.dog, this.player, this.dogStat) )
             );
 
             this.addButton(this.PrevPage);
             this.addButton(this.NextPage);
         }
+
+        @Override
+        public boolean isPauseScreen() {
+            return false;
+        }
+
         @Override
         public void render(MatrixStack stack, int mouseX, int mouseY, float partialTicks) {
             //Background
@@ -531,6 +585,44 @@ public class DogInfoScreen extends Screen {
                 this.dog.statsTracker.getDamageDealt()
             ), 2, 79, 0xFFFFFF );
             */
+        }
+    }
+
+    private class DogAmourEquipScreen extends Screen {
+        private Button PrevPage, NextPage;
+        private DogEntity dog; 
+        private PlayerEntity player;
+        private StatsTracker dogStat;
+        public DogAmourEquipScreen(DogEntity dog, PlayerEntity player, StatsTracker statsTracker) {
+            super(new TranslationTextComponent("doggytalents.screen.dog.armor.title"));
+            this.dog = dog; 
+            this.player = player; 
+            this.dogStat = statsTracker;
+        }
+        @Override 
+        public void init() {
+            this.PrevPage = new Button(2, this.height-22, 20, 20, new StringTextComponent("<"), 
+                btn -> Minecraft.getInstance().setScreen(new DogInfoScreen(this.dog, this.player, this.dogStat) )
+            );
+            this.NextPage = new Button(this.width-22, this.height-22, 20, 20, new StringTextComponent(">"), 
+                btn -> {} 
+            );
+
+            this.addButton(this.PrevPage);
+            this.addButton(this.NextPage);
+        }
+
+        @Override
+        public boolean isPauseScreen() {
+            return false;
+        }
+
+        @Override
+        public void render(MatrixStack stack, int mouseX, int mouseY, float partialTicks) {
+            //Background
+            this.renderBackground(stack);
+            super.render(stack, mouseX, mouseY, partialTicks);
+            InventoryScreen.renderEntityInInventory(this.width/2, this.height/2, 100, this.width/2 - mouseX , this.height/2 - mouseY, this.dog);
         }
     }
 }

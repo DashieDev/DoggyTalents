@@ -12,7 +12,7 @@ public class DoggyTags {
     public static ITag.INamedTag<Item> BREEDING_ITEMS = tag("breeding_items");
     public static ITag.INamedTag<Item> PACK_PUPPY_BLACKLIST = tag("pack_puppy_blacklist");
     public static ITag.INamedTag<Item> TREATS = tag("treats");
-
+    
     private static ITag.INamedTag<Item> tag(String name) {
         return ItemTags.bind(Util.getResourcePath(name));
     }

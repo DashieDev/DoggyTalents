@@ -1,5 +1,7 @@
 package doggytalents.common.entity.stats;
 
+import net.minecraft.entity.monster.ZombieEntity;
+
 public class StatsObject {
     public float damageDealt = 0;
     public int distanceOnWater = 0;

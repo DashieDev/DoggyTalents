@@ -83,6 +83,7 @@ import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
 import net.minecraft.entity.ai.goal.SitGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
+import net.minecraft.entity.item.ExperienceOrbEntity;
 import net.minecraft.entity.monster.AbstractSkeletonEntity;
 import net.minecraft.entity.monster.CreeperEntity;
 import net.minecraft.entity.monster.GhastEntity;
@@ -143,6 +144,8 @@ public class DogEntity extends AbstractDogEntity {
     private static final DataParameter<Byte> DOG_FLAGS = EntityDataManager.defineId(DogEntity.class, DataSerializers.BYTE);
 
     private static final DataParameter<Float> HUNGER_INT = EntityDataManager.defineId(DogEntity.class, DataSerializers.FLOAT);
+    private static final DataParameter<Integer> EXPERIENCE_INT = EntityDataManager.defineId(DogEntity.class, DataSerializers.INT); 
+
     private static final DataParameter<String> CUSTOM_SKIN = EntityDataManager.defineId(DogEntity.class, DataSerializers.STRING);
 
     private static final DataParameter<Byte> SIZE = EntityDataManager.defineId(DogEntity.class, DataSerializers.BYTE);
@@ -180,6 +183,7 @@ public class DogEntity extends AbstractDogEntity {
     private int prevHungerTick;
     private int healingTick;
     private int prevHealingTick;
+    private int xpCollectCooldown;
 
     private float headRotationCourse;
     private float headRotationCourseOld;
@@ -210,6 +214,7 @@ public class DogEntity extends AbstractDogEntity {
         this.entityData.define(GENDER.get(), EnumGender.UNISEX);
         this.entityData.define(MODE.get(), EnumMode.DOCILE);
         this.entityData.define(HUNGER_INT, 60F);
+        this.entityData.define(EXPERIENCE_INT, 0);
         this.entityData.define(CUSTOM_SKIN, "");
         this.entityData.define(DOG_LEVEL.get(), new DogLevel(0, 0));
         this.entityData.define(SIZE, (byte) 3);
@@ -470,6 +475,22 @@ public class DogEntity extends AbstractDogEntity {
 
                 this.healingTick = 0;
             }
+
+            //Scan for XP
+            if (this.tickCount > this.xpCollectCooldown) {
+                List<ExperienceOrbEntity> list = this.level.getEntitiesOfClass(ExperienceOrbEntity.class, this.getBoundingBox().inflate(2.5D, 1D, 2.5D), null);
+                int totalxp = 0;
+                for (ExperienceOrbEntity xp : list) {
+                    if (this.tickCount % 5 == 0) {
+                        totalxp+= xp.getValue();
+                        xp.remove();
+                        this.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP , this.getSoundVolume(), (this.random.nextFloat() - this.random.nextFloat()) * 0.35F + 0.9F);
+                        break;
+                    }
+                }
+                this.setDogExperiencePoint(this.getDogExperiencePoint() + totalxp);
+            }   
+            
         }
 
         if(ConfigValues.DIRE_PARTICLES && this.level.isClientSide && this.getLevel().isDireDog()) {
@@ -491,6 +512,7 @@ public class DogEntity extends AbstractDogEntity {
         }
 
         this.alterations.forEach((alter) -> alter.livingTick(this));
+        
     }
 
     @Override
@@ -502,9 +524,13 @@ public class DogEntity extends AbstractDogEntity {
             if (stack.getItem() == Items.STICK && this.canInteract(player)) {
 
                 if (this.level.isClientSide) {
-                    ChopinLogger.LOGGER.info( "at dogentity " + Float.toString(this.statsTracker.getDamageDealt()));
                     DogInfoScreen.open(this, this.statsTracker);
                 }
+
+                return ActionResultType.SUCCESS;
+            } else if (stack.getItem() == Items.BOOK && this.canInteract(player)) {
+                
+                if (!this.level.isClientSide) this.dropAllClaimedExperience();
 
                 return ActionResultType.SUCCESS;
             }
@@ -1219,6 +1245,7 @@ public class DogEntity extends AbstractDogEntity {
         compound.putInt("dogSize", this.getDogSize());
         compound.putInt("level_normal", this.getLevel().getLevel(Type.NORMAL));
         compound.putInt("level_dire", this.getLevel().getLevel(Type.DIRE));
+        compound.putInt("XpPoints", this.getDogExperiencePoint());
         NBTUtil.writeItemStack(compound, "fetchItem", this.getBoneVariant());
 
         DimensionDependantArg<Optional<BlockPos>> bedsData = this.entityData.get(DOG_BED_LOCATION.get());
@@ -1419,6 +1446,7 @@ public class DogEntity extends AbstractDogEntity {
             this.setOwnersName(NBTUtil.getTextComponent(compound, "lastKnownOwnerName"));
             this.setWillObeyOthers(compound.getBoolean("willObey"));
             this.setCanPlayersAttack(compound.getBoolean("friendlyFire"));
+            this.setDogExperiencePoint(compound.getInt("XpPoints"));
             if (compound.contains("dogSize", Constants.NBT.TAG_ANY_NUMERIC)) {
                 this.setDogSize(compound.getInt("dogSize"));
             }
@@ -1504,6 +1532,8 @@ public class DogEntity extends AbstractDogEntity {
                 e.printStackTrace();
             }
         });
+
+        ChopinLogger.LOGGER.info(this.getName().getString() + " is read !");
 
     }
 
@@ -1720,6 +1750,25 @@ public class DogEntity extends AbstractDogEntity {
 
     public void setBowlPos(RegistryKey<World> registryKey, Optional<BlockPos> pos) {
         this.entityData.set(DOG_BOWL_LOCATION.get(), this.entityData.get(DOG_BOWL_LOCATION.get()).copy().set(registryKey, pos));
+    }
+
+    public void setDogExperiencePoint(int points) {
+        this.entityData.set(EXPERIENCE_INT, points);
+    }   
+
+    public int getDogExperiencePoint() {
+        return this.entityData.get(EXPERIENCE_INT); 
+    }
+
+    public void dropAllClaimedExperience() {
+        int i = this.getDogExperiencePoint();
+        while(i > 0) {
+            int j = ExperienceOrbEntity.getExperienceValue(i);
+            i -= j;
+            this.level.addFreshEntity(new ExperienceOrbEntity(this.level, this.getOwner().getX(), this.getOwner().getY(), this.getOwner().getZ(), j));
+        }
+        this.setDogExperiencePoint(0);
+        this.xpCollectCooldown = this.tickCount+100;
     }
 
     @Override
@@ -2277,5 +2326,10 @@ public class DogEntity extends AbstractDogEntity {
 
     public void teleportToOwner() {
         EntityUtil.tryToTeleportNearEntity(this, this.getNavigation(), this.getOwner(), 4);
+    }
+    @Override
+    public boolean canBeLeashed(PlayerEntity player) {
+        if(!this.willObeyOthers()) return false;
+        else return super.canBeLeashed(player);
     }
 }

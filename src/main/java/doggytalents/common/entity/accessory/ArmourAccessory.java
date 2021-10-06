@@ -1,5 +1,6 @@
 package doggytalents.common.entity.accessory;
 
+import doggytalents.ChopinLogger;
 import doggytalents.DoggyAccessories;
 import doggytalents.DoggyAccessoryTypes;
 import doggytalents.DoggyAttributes;
@@ -23,6 +24,7 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.IItemProvider;
+import net.minecraft.util.SoundEvents;
 import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
@@ -109,7 +111,10 @@ public class ArmourAccessory extends Accessory {
                 slotType = ((ArmorItem) this.armourStack.getItem()).getSlot();
             }
 
-            dogIn.getAttributes().addTransientAttributeModifiers(this.armourStack.getAttributeModifiers(slotType));
+            //dogIn.getAttributes().addTransientAttributeModifiers(this.armourStack.getAttributeModifiers(slotType));
+            dogIn.setItemSlot(dogIn.getEquipmentSlotForItem(this.armourStack), this.armourStack);
+            dogIn.playSound(SoundEvents.ARMOR_EQUIP_GENERIC, 1.0f, 1.0f);
+            ChopinLogger.LOGGER.info(dogIn.getName().getString() +  " equiped armor : " + this.armourStack.getItem().getRegistryName().toString() );
         }
 
         @Override
@@ -120,7 +125,9 @@ public class ArmourAccessory extends Accessory {
                 slotType = ((ArmorItem) this.armourStack.getItem()).getSlot();
             }
 
-            dogIn.getAttributes().removeAttributeModifiers(this.armourStack.getAttributeModifiers(slotType));
+            //dogIn.getAttributes().removeAttributeModifiers(this.armourStack.getAttributeModifiers(slotType));
+            dogIn.setItemSlot(dogIn.getEquipmentSlotForItem(this.armourStack), ItemStack.EMPTY);
+            ChopinLogger.LOGGER.info(dogIn.getName().getString() +  " dequiped armor : " + this.armourStack.getItem().getRegistryName().toString() );
         }
 
         @Override

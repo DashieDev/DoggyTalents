@@ -6,7 +6,11 @@ import doggytalents.api.feature.DataKey;
 import doggytalents.api.inferface.AbstractDogEntity;
 import doggytalents.api.inferface.IDogItem;
 import doggytalents.api.registry.AccessoryInstance;
+import doggytalents.client.screen.UntameConfirmationScreen;
+import doggytalents.common.entity.DogEntity;
 import doggytalents.common.lib.Constants;
+import net.minecraft.entity.monster.DrownedEntity;
+import net.minecraft.entity.monster.ZombieEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -33,13 +37,19 @@ public class DogShearsItem extends Item implements IDogItem {
                     return ActionResultType.CONSUME;
                 }
 
-                if (!worldIn.isClientSide) {
+                if (/*!*/worldIn.isClientSide) {
+                    UntameConfirmationScreen.open((DogEntity) dogIn);
+                    //DolphinEntity
+                    //DrownedEntity
+
+                    /*
                     int cooldownLeft = dogIn.getDataOrDefault(COOLDOWN, dogIn.tickCount) - dogIn.tickCount;
 
                     if (cooldownLeft <= 0) {
                         worldIn.broadcastEntityEvent(dogIn, Constants.EntityState.WOLF_SMOKE);
                         dogIn.untame();
                     }
+                    */
                 }
 
                 return ActionResultType.SUCCESS;

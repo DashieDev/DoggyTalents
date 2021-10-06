@@ -73,7 +73,7 @@ public class WhistleItem extends Item {
             if (mode == 0) { // Stand
                 if (!world.isClientSide) {
                     for (DogEntity dog : dogsList) {
-                        ChopinLogger.LOGGER.info(dog.getName().getString() + " dealt(from whistler) : " + dog.damagedealt);
+                        ChopinLogger.LOGGER.info(dog.getName().getString() + " 's roar cooldown from server: " + Integer.toString( (Integer) dog.getDataOrDefault(RoaringGaleTalent.COOLDOWN, 0) ) ) ;
                         
                         dog.setOrderedToSit(false);
                         dog.getNavigation().stop();
@@ -104,6 +104,7 @@ public class WhistleItem extends Item {
                                 messageToOwner.setStyle(Style.EMPTY.withBold(true));
                                 messageToOwner.append(new StringTextComponent("I am here ! "));
                                 dog.getOwner().sendMessage(messageToOwner ,dog.getUUID());
+                                dog.getNavigation().stop();
                             }
                             
                             successful = true;
@@ -122,6 +123,7 @@ public class WhistleItem extends Item {
             }
             else if (mode == 2) { // Stay
                 if (!world.isClientSide) {
+
                     for (DogEntity dog : dogsList) {
                         dog.setOrderedToSit(true);
                         dog.getNavigation().stop();

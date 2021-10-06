@@ -2,6 +2,7 @@ package doggytalents.client.entity.render;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 
+import doggytalents.api.feature.EnumMode;
 import doggytalents.client.DogTextureManager;
 import doggytalents.client.entity.model.DogModel;
 import doggytalents.client.entity.render.layer.BoneLayer;
@@ -15,7 +16,10 @@ import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.text.Color;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TranslationTextComponent;
 
 import java.util.Optional;
@@ -49,12 +53,30 @@ public class DogRenderer extends MobRenderer<DogEntity, DogModel<DogEntity>> {
             double d0 = this.entityRenderDispatcher.distanceToSqr(entityIn);
             if (d0 <= 64 * 64) {
                 String tip = entityIn.getMode().getTip();
+                StringTextComponent s = new StringTextComponent(new TranslationTextComponent(tip).getString());
+                
+                //if (entityIn.getMode() == EnumMode.BERSERKER) {
+                    
+                    s.setStyle(Style.EMPTY.withColor(Color.fromRgb(0xeb4034)));
+                //};
+                /*
                 String label = String.format(ConfigValues.DOG_GENDER ? "%s(%d)%s" : "%s(%d)",
                         new TranslationTextComponent(tip).getString(),
                         MathHelper.ceil(entityIn.getDogHunger()),
                         new TranslationTextComponent(entityIn.getGender().getUnlocalisedTip()).getString());
+                        */
+                StringTextComponent s1 = new StringTextComponent(
+                    String.format(ConfigValues.DOG_GENDER ? "(%d)%s" : "(%d)",
+                        MathHelper.ceil(entityIn.getDogHunger()),
+                        new TranslationTextComponent(entityIn.getGender().getUnlocalisedTip()).getString())
+                );
+                s1.setStyle(Style.EMPTY.withColor(Color.fromRgb(0xeb4034)));
+                s.append(s1);
+                
+                
+                
 
-                RenderUtil.renderLabelWithScale(entityIn, this, label, matrixStackIn, bufferIn, packedLightIn, 0.01F, 0.12F);
+                RenderUtil.renderLabelWithScale(entityIn, this, s, matrixStackIn, bufferIn, packedLightIn, 0.01F, 0.12F);
 
                 if (d0 <= 5 * 5 && this.entityRenderDispatcher.camera.getEntity().isShiftKeyDown()) {
                     RenderUtil.renderLabelWithScale(entityIn, this, entityIn.getOwnersName().orElseGet(() -> this.getNameUnknown(entityIn)), matrixStackIn, bufferIn, packedLightIn, 0.01F, -0.25F);
