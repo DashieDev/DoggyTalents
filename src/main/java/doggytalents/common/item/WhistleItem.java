@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import doggytalents.DoggySounds;
 import doggytalents.DoggyTalents;
+import doggytalents.api.DoggyTalentsAPI;
 import doggytalents.api.feature.EnumMode;
 import doggytalents.common.config.ConfigValues;
 import doggytalents.common.entity.DogEntity;
@@ -27,6 +28,8 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
@@ -92,7 +95,9 @@ public class WhistleItem extends Item {
                 if (!world.isClientSide) {
                     for (DogEntity dog : dogsList) {
                         if (!dog.isInSittingPose() && dog.getMode() != EnumMode.WANDERING) {
-                            //TODO DogUtil.teleportDogToOwner(player, dog, world, dog.getNavigator());
+                            if (dog.distanceToSqr(dog.getOwner()) > 16) { // Only heel if distanceTo < dog.DistStop
+                                dog.teleportToOwner();
+                            }
                             successful = true;
                         }
                     }
@@ -181,15 +186,13 @@ public class WhistleItem extends Item {
                     if (roarDogs.isEmpty()) {
                         player.displayClientMessage(new TranslationTextComponent("talent.doggytalents.roaring_gale.level"), true);
                     } else {
-                        List<DogEntity> cdDogs = roarDogs.stream().filter(dog -> dog.getDataOrDefault(RoaringGaleTalent.COOLDOWN, 0) == 0).collect(Collectors.toList());
+                        List<DogEntity> cdDogs = roarDogs.stream().filter(dog -> dog.getDataOrDefault(RoaringGaleTalent.COOLDOWN, dog.tickCount) <= dog.tickCount).collect(Collectors.toList());  //Filter dogs who has self.tickCount passed the deadline
                         if (cdDogs.isEmpty()) {
                             player.displayClientMessage(new TranslationTextComponent("talent.doggytalents.roaring_gale.cooldown"), true);
                         } else {
                             for (DogEntity dog : dogsList) {
                                 int level = dog.getLevel(DoggyTalents.ROARING_GALE);
-                                int roarCooldown = dog.getDataOrDefault(RoaringGaleTalent.COOLDOWN, 0);
-
-                                roarCooldown = level == 5 ? 60 : 100;
+                                int roarCooldown = dog.tickCount;   // get the time
 
                                 byte damage = (byte)(level > 4 ? level * 2 : level);
 
@@ -215,12 +218,14 @@ public class WhistleItem extends Item {
 
                                 if (hit) {
                                     dog.playSound(SoundEvents.WOLF_GROWL, 0.7F, 1.0F);
+                                    roarCooldown += (level == 5 ? 60 : 100); //Get the time when the cooldown ends with respect to whether the target is hit 
                                 } else {
                                     dog.playSound(SoundEvents.WOLF_AMBIENT, 1F, 1.2F);
-                                    roarCooldown /= 2;
+                                    roarCooldown += (level == 5 ? 30 : 50); //if not hit then the offset would be half the offset when it hits. And i think it should be precalculated.
                                 }
 
-                                dog.setData(RoaringGaleTalent.COOLDOWN, roarCooldown);
+                                dog.setData(RoaringGaleTalent.COOLDOWN, roarCooldown); // RoaringGaleTalent.COOLDOWN is currently storing the deadline of the cooldown according to DogEntity.tickCount
+                            
                             }
                         }
                     }
