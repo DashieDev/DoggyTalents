@@ -11,6 +11,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.item.ExperienceOrbEntity;
+import net.minecraft.entity.passive.horse.HorseEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.text.Color;
 import net.minecraft.util.text.StringTextComponent;
@@ -71,7 +72,7 @@ public class UntameConfirmationScreen extends Screen {
     }
 
     private void confirmUntame() {
-        ChopinLogger.LOGGER.info("Confirmed");
+        ChopinLogger.l("Confirmed");
         //TODO : implement untame request and handle
     }
 

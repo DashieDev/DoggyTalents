@@ -28,7 +28,9 @@ public class DogRespawnData implements IDogData {
     private static final List<String> TAGS_TO_REMOVE = Lists.newArrayList(
             "Pos", "Health", "Motion", "Rotation", "FallDistance", "Fire", "Air", "OnGround",
             "Dimension", "PortalCooldown", "Passengers", "Leash", "InLove", "Leash", "HurtTime",
-            "HurtByTimestamp", "DeathTime", "AbsorptionAmount", "FallFlying", "Brain", "Sitting"); // Remove dog mode
+            "HurtByTimestamp", "DeathTime", "AbsorptionAmount", "FallFlying", "Brain", "Sitting",
+            "ActiveEffects"
+    ); // Remove dog mode
 
     protected DogRespawnData(DogRespawnStorage storageIn, UUID uuid) {
         this.storage = storageIn;
@@ -60,7 +62,7 @@ public class DogRespawnData implements IDogData {
 
     public void populate(DogEntity dogIn) {
         this.data = new CompoundNBT();
-        dogIn.saveWithoutId(this.data);
+        dogIn.saveWithoutId(this.data); // C Style XD
 
         // Remove tags that don't need to be saved
         for (String tag : TAGS_TO_REMOVE) {

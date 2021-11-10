@@ -1,5 +1,6 @@
 package doggytalents.common.entity.ai;
 
+import doggytalents.ChopinLogger;
 import doggytalents.api.feature.EnumMode;
 import doggytalents.common.entity.DogEntity;
 import net.minecraft.entity.LivingEntity;
@@ -12,7 +13,12 @@ public class GuardModeGoal extends NearestAttackableTargetGoal<MonsterEntity> {
     private LivingEntity owner;
 
     public GuardModeGoal(DogEntity dogIn, boolean checkSight) {
-        super(dogIn, MonsterEntity.class, 0, checkSight, false, null);
+        super(dogIn, MonsterEntity.class, 0, checkSight, false, 
+            null //Add predicate whick use the DogEntity::alterations dependent DogEntity::wantsToAttack method to filter out the target
+        );
+        if (dogIn == null) {
+            ChopinLogger.l("oOoOoOoOoOo nulll!!!");
+        } 
         this.dog = dogIn;
     }
 
@@ -42,8 +48,9 @@ public class GuardModeGoal extends NearestAttackableTargetGoal<MonsterEntity> {
         return 6D;
     }
 
+
     @Override
     protected void findTarget() {
-       this.target = this.dog.level.getNearestLoadedEntity(this.targetType, this.targetConditions, this.owner, this.dog.getX(), this.dog.getEyeY(), this.dog.getZ(), this.getTargetSearchArea(this.getFollowDistance()));
+       this.target = this.dog.level.getNearestLoadedEntity(this.targetType, this.targetConditions, this.dog, this.owner.getX(), this.owner.getEyeY(), this.owner.getZ(), this.getTargetSearchArea(this.getFollowDistance()));
     }
 }

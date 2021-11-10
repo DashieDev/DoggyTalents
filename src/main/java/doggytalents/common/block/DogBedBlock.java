@@ -200,7 +200,7 @@ public class DogBedBlock extends Block {
                         closests.setTargetBlock(pos);
                     }
                 } else if (dogBedTileEntity.getOwnerUUID() != null) {
-                    DogRespawnData storage = DogRespawnStorage.get(worldIn).remove(dogBedTileEntity.getOwnerUUID());
+                    DogRespawnData storage = DogRespawnStorage.get(worldIn).remove(dogBedTileEntity.getOwnerUUID()); //remove dog in the dead if present
 
                     if (storage != null) {
                         DogEntity dog = storage.respawn((ServerWorld) worldIn, player, pos.above());

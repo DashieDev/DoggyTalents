@@ -1,5 +1,6 @@
 package doggytalents.common.inventory;
 
+import doggytalents.ChopinLogger;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
@@ -15,6 +16,7 @@ public class PackPuppyItemHandler extends ItemStackHandler {
     @Override
     public CompoundNBT serializeNBT() {
         ListNBT itemsList = new ListNBT();
+        ChopinLogger.l("in cap::packpuppy::serializeNBT");
 
         for(int i = 0; i < this.stacks.size(); i++) {
            ItemStack stack = this.stacks.get(i);
@@ -34,6 +36,7 @@ public class PackPuppyItemHandler extends ItemStackHandler {
 
     @Override
     public void deserializeNBT(CompoundNBT compound) {
+        ChopinLogger.l("in cap::packpuppy::deserializeNBT");
         if (compound.contains("items", Constants.NBT.TAG_LIST)) {
             ListNBT tagList = compound.getList("items", Constants.NBT.TAG_COMPOUND);
             for (int i = 0; i < tagList.size(); i++) {

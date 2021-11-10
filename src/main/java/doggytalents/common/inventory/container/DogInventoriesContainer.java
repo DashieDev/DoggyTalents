@@ -3,6 +3,7 @@ package doggytalents.common.inventory.container;
 import java.util.ArrayList;
 import java.util.List;
 
+import doggytalents.ChopinLogger;
 import doggytalents.DoggyContainerTypes;
 import doggytalents.DoggyTalents;
 import doggytalents.common.entity.DogEntity;
@@ -74,6 +75,7 @@ public class DogInventoriesContainer extends Container {
                     continue;
                 }
 
+                //this two lines is in charge of the level dependency <chopin>
                 int level = MathHelper.clamp(dog.getLevel(DoggyTalents.PACK_PUPPY), 0, 5); // Number of rows for this dog
                 int numCols = MathHelper.clamp(level, 0, Math.max(0, TOTAL_COLUMNS)); // Number of rows to draw
 
@@ -82,8 +84,13 @@ public class DogInventoriesContainer extends Container {
                         DogInventorySlot slot = new DogInventorySlot(dog, this.player, packInventory, drawingColumn + col, row, col, col * 3 + row, 8 + 18 * (drawingColumn + col - page), 18 * row + 18);
                         this.addDogSlot(slot);
                         int adjustedColumn = slot.getOverallColumn() - page;
+                        ChopinLogger.l(
+                                " adjusted : " + adjustedColumn
+                                + " page : " + page
+                                + "overall : " + slot.getOverallColumn()
+                            );
                         if (adjustedColumn - page < 0 || adjustedColumn - page >= 9) {
-                            slot.setEnabled(false);
+                            slot.setEnabled(false); // when drawcol+col-page*2 not in range(0, 10)
                         }
                     }
                 }
@@ -149,6 +156,7 @@ public class DogInventoriesContainer extends Container {
 
     @Override
     public ItemStack quickMoveStack(PlayerEntity player, int i) {
+        ChopinLogger.l("in quickMoveStack");
         ItemStack itemstack = ItemStack.EMPTY;
         Slot slot = this.slots.get(i);
 

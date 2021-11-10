@@ -12,8 +12,10 @@ import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import doggytalents.ChopinLogger;
 import doggytalents.DoggyEntityTypes;
 import doggytalents.DoggyItems;
+import doggytalents.common.lib.Constants;
 import doggytalents.common.util.Util;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.FrameType;
@@ -26,6 +28,7 @@ import net.minecraft.data.AdvancementProvider;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DirectoryCache;
 import net.minecraft.data.IDataProvider;
+import net.minecraft.entity.EntityType;
 import net.minecraft.item.Items;
 import net.minecraft.util.ResourceLocation;
 
@@ -47,6 +50,7 @@ public class DTAdvancementProvider extends AdvancementProvider {
 
     @Override
     public void run(DirectoryCache cache) throws IOException {
+        ChopinLogger.l("in Data generator runs");
         Path path = this.generator.getOutputFolder();
         Set<ResourceLocation> set = Sets.newHashSet();
         Consumer<Advancement> consumer = (advancement) -> {
@@ -63,12 +67,12 @@ public class DTAdvancementProvider extends AdvancementProvider {
             }
         };
 
-        // Disable advancements for now
-        if (true) return;
+        // Disable advancements for now ???? DA f$#k ??? <<chopin>>
+        //if (true) return;
 
         Advancement advancement = Advancement.Builder.advancement()
-                .display(DisplayInfoBuilder.create().icon(DoggyItems.TRAINING_TREAT).frame(FrameType.TASK).translate("dog.root").background("stone.png").noToast().noAnnouncement().build())
-                .addCriterion("tame_dog", TameAnimalTrigger.Instance.tamedAnimal(EntityPredicate.Builder.entity().of(DoggyEntityTypes.DOG.get()).build()))
+                .display(DisplayInfoBuilder.create().icon(DoggyItems.TRAINING_TREAT).frame(FrameType.TASK).translate("dog.root").background(Constants.MOD_ID ,"rach.png").build())
+                .addCriterion("tame_dog", TameAnimalTrigger.Instance.tamedAnimal(EntityPredicate.Builder.entity().of(EntityType.WOLF).build()))
                 //.withCriterion("get_dog", ItemUseTrigger.TameAnimalTrigger.Instance.create(EntityPredicate.Builder.create().type(DoggyEntityTypes.DOG.get()).build()))
                 .requirements(IRequirementsStrategy.OR)
                 .save(consumer, Util.getResourcePath("default/tame_dog"));

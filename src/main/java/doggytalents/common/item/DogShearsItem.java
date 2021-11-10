@@ -39,7 +39,7 @@ public class DogShearsItem extends Item implements IDogItem {
 
                 if (/*!*/worldIn.isClientSide) {
                     UntameConfirmationScreen.open((DogEntity) dogIn);
-                    //DolphinEntity
+    
                     //DrownedEntity
 
                     /*

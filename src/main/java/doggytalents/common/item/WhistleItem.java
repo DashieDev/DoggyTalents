@@ -12,6 +12,7 @@ import doggytalents.common.config.ConfigValues;
 import doggytalents.common.entity.DogEntity;
 import doggytalents.common.entity.DoggyBeamEntity;
 import doggytalents.common.talent.RoaringGaleTalent;
+import doggytalents.common.util.ChopinLoggerGUI;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.PlayerEntity;
@@ -55,7 +56,7 @@ public class WhistleItem extends Item {
                 }
 
                 int mode = stack.getTag().getInt("mode");
-                stack.getTag().putInt("mode", (mode + 1) % 7);
+                stack.getTag().putInt("mode", (mode + 1) % 8);
             }
 
             return new ActionResult<ItemStack>(ActionResultType.SUCCESS, stack);
@@ -73,7 +74,7 @@ public class WhistleItem extends Item {
             if (mode == 0) { // Stand
                 if (!world.isClientSide) {
                     for (DogEntity dog : dogsList) {
-                        ChopinLogger.LOGGER.info(dog.getName().getString() + " 's roar cooldown from server: " + Integer.toString( (Integer) dog.getDataOrDefault(RoaringGaleTalent.COOLDOWN, 0) ) ) ;
+                        ChopinLogger.l(dog.getName().getString() + " 's roar cooldown from server: " + Integer.toString( (Integer) dog.getDataOrDefault(RoaringGaleTalent.COOLDOWN, 0) ) ) ;
                         
                         dog.setOrderedToSit(false);
                         dog.getNavigation().stop();
@@ -209,7 +210,7 @@ public class WhistleItem extends Item {
                                 /*
                                  * If level = 1, set duration to  20 ticks (1 second); level = 2, set duration to 24 ticks (1.2 seconds)
                                  * If level = 3, set duration to 36 ticks (1.8 seconds); If level = 4, set duration to 48 ticks (2.4 seconds)
-                                 * If level = max (5), set duration to 70 ticks (3.5 seconds);
+                                 * If level = max -> 5, set duration to 70 ticks (3.5 seconds);
                                  */
                                 byte effectDuration = (byte)(level > 4 ? level * 14 : level * (level == 1 ? 20 : 12));
                                 byte knockback = (byte)level;
@@ -242,8 +243,10 @@ public class WhistleItem extends Item {
                 }
 
                 return new ActionResult<>(ActionResultType.SUCCESS, player.getItemInHand(hand));
-            }
+            } else if (mode == 7 && !dogsList.isEmpty() && !player.level.isClientSide)  { //Debug chopin
 
+                return new ActionResult<>(ActionResultType.SUCCESS, player.getItemInHand(hand));
+            }
             //world.playSound(null, player.getPosition(), DoggySounds.WHISTLE_LONG, SoundCategory.PLAYERS, 0.8F, 0.8F + world.rand.nextFloat() * 0.2F);
             //world.playSound(null, player.getPosition(), DoggySounds.WHISTLE_SHORT, SoundCategory.PLAYERS, 0.8F, 0.6F + world.rand.nextFloat() * 0.2F);
         }

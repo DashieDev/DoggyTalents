@@ -1,5 +1,6 @@
 package doggytalents.common.inventory.container;
 
+import doggytalents.ChopinLogger;
 import doggytalents.DoggyContainerTypes;
 import doggytalents.DoggyTalents;
 import doggytalents.api.inferface.AbstractDogEntity;
@@ -24,6 +25,7 @@ public class PackPuppyContainer extends Container {
 
     public PackPuppyContainer(int windowId, PlayerInventory playerInventory, AbstractDogEntity dogIn) {
         super(DoggyContainerTypes.PACK_PUPPY.get(), windowId);
+        ChopinLogger.l("in Packpuppy::constr");
         this.dog = dogIn;
         this.level = MathHelper.clamp(dogIn.getLevel(DoggyTalents.PACK_PUPPY), 0, 5);
         this.packInventory = dogIn.getCapability(PackPuppyTalent.PACK_PUPPY_CAPABILITY).orElseThrow(() -> new RuntimeException("Item handler not present."));
@@ -50,6 +52,7 @@ public class PackPuppyContainer extends Container {
 
     @Override
     public ItemStack quickMoveStack(PlayerEntity player, int i) {
+        ChopinLogger.l("in Packpuppy::quickMoveStack");
         ItemStack itemstack = ItemStack.EMPTY;
         Slot slot = this.slots.get(i);
         int packpuppyLevel = MathHelper.clamp(this.level, 0, 5);

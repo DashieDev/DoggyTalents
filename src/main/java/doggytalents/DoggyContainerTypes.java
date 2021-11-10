@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import doggytalents.common.entity.DogEntity;
+import doggytalents.common.inventory.container.DogHotSlotContainer;
 import doggytalents.common.inventory.container.DogInventoriesContainer;
 import doggytalents.common.inventory.container.FoodBowlContainer;
 import doggytalents.common.inventory.container.PackPuppyContainer;
@@ -38,6 +39,7 @@ public class DoggyContainerTypes {
         return new TreatBagContainer(windowId, inv, slotId, data.readItem());
     });
     public static final RegistryObject<ContainerType<DogInventoriesContainer>> DOG_INVENTORIES = register("dog_inventories", (windowId, inv, data) -> {
+        //Where doggy ids client fetching occurs
         int noDogs = data.readInt();
         List<DogEntity> dogs = new ArrayList<>(noDogs);
         IntArray array = new IntArray(noDogs);
@@ -48,7 +50,19 @@ public class DoggyContainerTypes {
                 array.set(i, entity.getId());
             }
         }
+        ChopinLogger.l("returning Container with doggy ids");
         return !dogs.isEmpty() ? new DogInventoriesContainer(windowId, inv, array) : null;
+        //returning the coinatiner with fetched dog ids
+    });
+    
+    public static final RegistryObject<ContainerType<DogHotSlotContainer>> DOG_HOTSLOT = register("dog_hotslot", (windowId, inv, data) -> {
+        int id = data.readInt();
+        Entity e = inv.player.level.getEntity(id);
+        if (e instanceof DogEntity) {
+            return new DogHotSlotContainer(windowId, inv, (DogEntity)e);
+        } else {
+            return null;
+        }
     });
 
     private static <X extends Container, T extends ContainerType<X>> RegistryObject<ContainerType<X>> register(final String name, final IContainerFactory<X> factory) {

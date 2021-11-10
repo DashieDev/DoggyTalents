@@ -6,6 +6,7 @@ import doggytalents.DoggyItems;
 import doggytalents.api.inferface.AbstractDogEntity;
 import doggytalents.common.block.tileentity.FoodBowlTileEntity;
 import doggytalents.common.entity.DogEntity;
+import doggytalents.common.inventory.container.DogHotSlotContainer;
 import doggytalents.common.inventory.container.DogInventoriesContainer;
 import doggytalents.common.inventory.container.PackPuppyContainer;
 import doggytalents.common.inventory.container.TreatBagContainer;
@@ -85,6 +86,29 @@ public class Screens {
         }
     }
 
+    public static class DogHotSlotContainerProvider implements INamedContainerProvider {
+        DogEntity dog;
+
+        public DogHotSlotContainerProvider(DogEntity dogIn) {
+            this.dog = dogIn;
+        }
+
+
+        @Override
+        public ITextComponent getDisplayName() {
+            return new TranslationTextComponent("container.doggytalents.dog_hotslot");
+        }
+
+
+        @Override
+        public Container createMenu(int windowId, PlayerInventory playerInventory,
+                PlayerEntity player) {
+                
+            return new DogHotSlotContainer(windowId, playerInventory, this.dog);
+        }
+
+    }
+
     public static void openPackPuppyScreen(ServerPlayerEntity player, AbstractDogEntity dogIn) {
         if (dogIn.isAlive()) {
             NetworkHooks.openGui(player, new PackPuppyContainerProvider(dogIn), (buf) -> {
@@ -95,12 +119,22 @@ public class Screens {
 
     public static void openDogInventoriesScreen(ServerPlayerEntity player, List<DogEntity> dogIn) {
         if (!dogIn.isEmpty()) {
+            //ChopinBookmark1
             NetworkHooks.openGui(player, new DogInventoriesContainerProvider(dogIn), (buf) -> {
                 buf.writeInt(dogIn.size());
                 for (DogEntity dog : dogIn) {
-                    buf.writeInt(dog.getId());
+                    //TODO if (dog.isOwnedBy(player))
+                    buf.writeInt(dog.getId()); //Max dog read : 8149
                 }
             });
+        }
+    }
+
+    public static void openDogHotSlotScreen(ServerPlayerEntity player, DogEntity dogIn) {
+        if (dogIn != null) {
+            NetworkHooks.openGui(player, new DogHotSlotContainerProvider(dogIn), (buf) -> {
+                buf.writeInt(dogIn.getId());
+            } );
         }
     }
 

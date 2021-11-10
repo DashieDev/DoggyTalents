@@ -9,10 +9,12 @@ import doggytalents.common.network.packet.DogTalentPacket;
 import doggytalents.common.network.packet.DogTexturePacket;
 import doggytalents.common.network.packet.FetchStatPacket;
 import doggytalents.common.network.packet.FriendlyFirePacket;
+import doggytalents.common.network.packet.OpenDogHotSlotScreenPacket;
 import doggytalents.common.network.packet.OpenDogScreenPacket;
 import doggytalents.common.network.packet.RequestSkinPacket;
 import doggytalents.common.network.packet.SendSkinPacket;
 import doggytalents.common.network.packet.data.DogData;
+import doggytalents.common.network.packet.data.DogHotSlotScreenData;
 import doggytalents.common.network.packet.data.DogInventoryPageData;
 import doggytalents.common.network.packet.data.DogModeData;
 import doggytalents.common.network.packet.data.DogNameData;
@@ -46,6 +48,7 @@ public final class PacketHandler {
         registerPacket(new DogTexturePacket(), DogTextureData.class);
         registerPacket(new RequestUpdateStats(), StatsRequestData.class);
         registerPacket(new FetchStatPacket(), StatsData.class);
+        registerPacket(new OpenDogHotSlotScreenPacket(), DogHotSlotScreenData.class);
     }
 
     public static <MSG> void send(PacketDistributor.PacketTarget target, MSG message) {

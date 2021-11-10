@@ -35,9 +35,11 @@ import doggytalents.common.talent.RoaringGaleTalent;
 import doggytalents.common.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
+import net.minecraft.client.gui.DisplayEffectsScreen;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.IngameGui;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.inventory.AnvilScreen;
 import net.minecraft.client.gui.screen.inventory.InventoryScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.Widget;
@@ -54,6 +56,9 @@ import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraft.inventory.container.PlayerContainer;
+import net.minecraft.item.ArmorItem;
+import net.minecraft.item.SwordItem;
 
 public class DogInfoScreen extends Screen {
 
@@ -90,7 +95,7 @@ public class DogInfoScreen extends Screen {
     }
 
     public static void open(DogEntity dog, StatsTracker statsTracker) {
-        ChopinLogger.LOGGER.info(dog.getName().getString() + " 's roar cooldown from client: " + Integer.toString( (Integer) dog.getDataOrDefault(RoaringGaleTalent.COOLDOWN, 0) )); 
+        ChopinLogger.l(dog.getName().getString() + " 's roar cooldown from client: " + Integer.toString( (Integer) dog.getDataOrDefault(RoaringGaleTalent.COOLDOWN, 0) )); 
         Minecraft mc = Minecraft.getInstance();
         mc.setScreen(new DogInfoScreen(dog, mc.player, statsTracker));
     }
@@ -544,7 +549,7 @@ public class DogInfoScreen extends Screen {
             );
             
             this.font.draw(stack, title_stats , 2, 2, 0xFF10F9);
-
+            
             /*
                 private float damageDealt = 0;
                 private int distanceOnWater = 0;
@@ -558,7 +563,6 @@ public class DogInfoScreen extends Screen {
             this.font.draw(stack, "Damage dealt : " + Float.toString(
                 this.dog.statsTracker.getDamageDealt()
             ), 2, 13, 0xFFFFFF );
-            try {
             this.font.draw(stack, "Distance on water : " + Integer.toString(
                 this.dogStat.getDistanceOnWater()
             ), 2, 24, 0xFFFFFF );
@@ -574,9 +578,6 @@ public class DogInfoScreen extends Screen {
             this.font.draw(stack, "Death counts : " + Integer.toString(
                 this.dogStat.getDeathCounts()
             ), 2, 68, 0xff0000 );
-            } catch (Exception e) {
-                ChopinLogger.LOGGER.info(e.toString()); 
-            }
             /*
             this.font.draw(stack, "Damage dealt : " + Float.toString(
                 this.dog.statsTracker.getDamageDealt()
@@ -588,13 +589,13 @@ public class DogInfoScreen extends Screen {
         }
     }
 
-    private class DogAmourEquipScreen extends Screen {
+    private class DogAmourEquipScreen extends DisplayEffectsScreen<PlayerContainer>  {
         private Button PrevPage, NextPage;
         private DogEntity dog; 
         private PlayerEntity player;
         private StatsTracker dogStat;
         public DogAmourEquipScreen(DogEntity dog, PlayerEntity player, StatsTracker statsTracker) {
-            super(new TranslationTextComponent("doggytalents.screen.dog.armor.title"));
+            super(player.inventoryMenu, player.inventory, new TranslationTextComponent( "doggytalents.screen.dog.armor.title"));
             this.dog = dog; 
             this.player = player; 
             this.dogStat = statsTracker;
@@ -624,5 +625,12 @@ public class DogInfoScreen extends Screen {
             super.render(stack, mouseX, mouseY, partialTicks);
             InventoryScreen.renderEntityInInventory(this.width/2, this.height/2, 100, this.width/2 - mouseX , this.height/2 - mouseY, this.dog);
         }
+        
+
+        @Override
+        protected void renderBg(MatrixStack p_230450_1_, float p_230450_2_, int p_230450_3_, int p_230450_4_) {
+            // TODO Auto-generated method stub
+        }
+    
     }
 }

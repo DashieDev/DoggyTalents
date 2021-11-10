@@ -19,6 +19,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 public class StatsTracker {
 
+    public StatsTracker() {
+        ChopinLogger.l("statstrackerloaded");
+    }
+
     private Map<EntityType<?>, Integer> ENTITY_KILLS = Maps.newHashMap();
     private float damageDealt = 0;
     private int distanceOnWater = 0;

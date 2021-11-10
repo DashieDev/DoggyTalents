@@ -33,7 +33,7 @@
       "projectName": "DoggyTalents",
       "cwd": "${workspaceFolder}\\run",
       "vmArgs": "-Dforge.logging.console.level\u003ddebug -XX:+IgnoreUnrecognizedVMOptions --add-exports\u003djava.base/sun.security.util\u003dALL-UNNAMED --add-exports\u003djdk.naming.dns/com.sun.jndi.dns\u003djava.naming --add-opens\u003djava.base/java.util.jar\u003dALL-UNNAMED",
-      "args": "--mod doggytalents --all --output \"C:\\Users\\GIGABYTE\\Documents\\GitHub\\DoggyTalents\\src\\generated\\resources\" --existing \"C:\\Users\\GIGABYTE\\Documents\\GitHub\\DoggyTalents\\src\\main\\resources\"",
+      "args": "--mod doggytalents --all --output \"C:\\Users\\GIGABYTE\\Development\\Visual Studio Code\\Java\\MCMods\\DTCustom\\DoggyTalents\\src\\generated\\resources\" --existing \"C:\\Users\\GIGABYTE\\Development\\Visual Studio Code\\Java\\MCMods\\DTCustom\\DoggyTalents\\src\\main\\resources\"",
       "env": {
         "MOD_CLASSES": "doggytalents%%${workspaceFolder}\\bin\\main;doggytalents%%${workspaceFolder}\\bin\\main;doggytalents%%${workspaceFolder}\\bin\\api;doggytalents%%${workspaceFolder}\\bin\\api",
         "MCP_MAPPINGS": "official_1.16.5",

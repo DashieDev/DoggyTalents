@@ -10,6 +10,7 @@ import doggytalents.api.inferface.IDogAlteration;
 import doggytalents.api.registry.Accessory;
 import doggytalents.api.registry.AccessoryInstance;
 import doggytalents.api.registry.AccessoryType;
+import doggytalents.common.entity.DogEntity;
 import doggytalents.common.util.ColourCache;
 import doggytalents.common.util.Util;
 import net.minecraft.client.renderer.entity.PlayerRenderer;
@@ -26,6 +27,11 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.IItemProvider;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.world.World;
+import net.minecraftforge.event.entity.EntityEvent;
+import net.minecraftforge.event.entity.item.ItemEvent;
+import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 import javax.annotation.Nonnull;
 import java.util.UUID;
@@ -114,20 +120,22 @@ public class ArmourAccessory extends Accessory {
             //dogIn.getAttributes().addTransientAttributeModifiers(this.armourStack.getAttributeModifiers(slotType));
             dogIn.setItemSlot(dogIn.getEquipmentSlotForItem(this.armourStack), this.armourStack);
             dogIn.playSound(SoundEvents.ARMOR_EQUIP_GENERIC, 1.0f, 1.0f);
-            ChopinLogger.LOGGER.info(dogIn.getName().getString() +  " equiped armor : " + this.armourStack.getItem().getRegistryName().toString() );
+            ChopinLogger.l(dogIn.getName().getString() +  " equiped armor : " + this.armourStack.getItem().getRegistryName().toString() );
         }
 
         @Override
         public void remove(AbstractDogEntity dogIn) {
+            //{ ??? wtf ??? chopin
             EquipmentSlotType slotType = null;
 
             if (this.armourStack.getItem() instanceof ArmorItem) {
                 slotType = ((ArmorItem) this.armourStack.getItem()).getSlot();
             }
+            //} ???? wtf ??? chopin
 
             //dogIn.getAttributes().removeAttributeModifiers(this.armourStack.getAttributeModifiers(slotType));
             dogIn.setItemSlot(dogIn.getEquipmentSlotForItem(this.armourStack), ItemStack.EMPTY);
-            ChopinLogger.LOGGER.info(dogIn.getName().getString() +  " dequiped armor : " + this.armourStack.getItem().getRegistryName().toString() );
+            ChopinLogger.l(dogIn.getName().getString() +  " dequiped armor : " + this.armourStack.getItem().getRegistryName().toString() );
         }
 
         @Override
@@ -143,5 +151,29 @@ public class ArmourAccessory extends Accessory {
         public ItemStack getReturnItem() {
             return this.armourStack;
         }
+
+        @Override
+        public void livingTick(AbstractDogEntity d) {
+            if (!d.level.isClientSide) {
+                //ChopinLogger.l("in ArmourAccessories tick handle of " + d.getName().getString());
+                if (this.armourStack.getItem() == Items.AIR){
+                    
+                    ChopinLogger.l(d.getName().getString() +" " + this.getReturnItem().getItem().toString() +  " accessories can be removed now ! ");
+                    try {
+                        this.remove(d);
+                        d.getAccessories().remove(this);
+                        ((DogEntity)d).setAlterationNeedUpdate();
+                        //d.markAccessoriesDirty();
+                        ChopinLogger.l("Suceed!");
+                    } catch (Exception e) {
+                        ChopinLogger.l(e.toString());
+                    }
+                }
+            }
+            
+        }
+
+        
     }
 }
+

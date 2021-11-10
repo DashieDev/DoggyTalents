@@ -1,5 +1,6 @@
 package doggytalents.common.inventory.container.slot;
 
+import doggytalents.ChopinLogger;
 import doggytalents.common.entity.DogEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.Slot;

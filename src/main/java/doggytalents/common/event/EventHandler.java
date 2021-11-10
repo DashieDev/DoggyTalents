@@ -51,7 +51,11 @@ public class EventHandler {
                     dog.setOrderedToSit(false);
                     dog.setAge(wolf.getAge());
                     dog.absMoveTo(wolf.getX(), wolf.getY(), wolf.getZ(), wolf.yRot, wolf.xRot);
+                    dog.setYHeadRot(wolf.getYHeadRot());
+                    dog.setYBodyRot(wolf.yBodyRot);
+                    dog.setInSittingPose(wolf.isInSittingPose());
 
+                    
                     world.addFreshEntity(dog);
 
                     wolf.remove();

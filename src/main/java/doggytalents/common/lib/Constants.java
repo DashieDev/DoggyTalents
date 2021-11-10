@@ -18,6 +18,7 @@ public class Constants {
     // Storage
     public static final String STORAGE_DOG_RESPAWN = MOD_ID + "DeadDogs";
     public static final String STORAGE_DOG_LOCATION = "dog_locations";
+    public static final String STORAGE_DOG_LIVE = "dog_live";
 
     public static class EntityState {
 

@@ -14,6 +14,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Maps;
 
+import doggytalents.ChopinLogger;
 import doggytalents.DoggyTalents2;
 import doggytalents.common.entity.DogEntity;
 import doggytalents.common.lib.Constants;
@@ -25,7 +26,7 @@ import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.DimensionSavedDataManager;
 import net.minecraft.world.storage.WorldSavedData;
 
-public class DogRespawnStorage extends WorldSavedData {
+public class  DogRespawnStorage extends WorldSavedData {
 
     private Map<UUID, DogRespawnData> respawnDataMap = Maps.newConcurrentMap();
 
@@ -118,6 +119,7 @@ public class DogRespawnStorage extends WorldSavedData {
 
             this.respawnDataMap.put(uuid, respawnData);
         }
+        ChopinLogger.l("in DogRespawnData::load");
     }
 
     @Override
@@ -135,6 +137,7 @@ public class DogRespawnStorage extends WorldSavedData {
         }
 
         compound.put("respawnData", list);
+        ChopinLogger.l("in DogRespawnStorage::save");
 
         return compound;
     }

@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -74,6 +75,7 @@ import net.minecraft.entity.Pose;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
+import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.HurtByTargetGoal;
 import net.minecraft.entity.ai.goal.LeapAtTargetGoal;
 import net.minecraft.entity.ai.goal.LookAtGoal;
@@ -88,6 +90,7 @@ import net.minecraft.entity.monster.AbstractSkeletonEntity;
 import net.minecraft.entity.monster.CreeperEntity;
 import net.minecraft.entity.monster.GhastEntity;
 import net.minecraft.entity.monster.MonsterEntity;
+import net.minecraft.entity.monster.ZombieEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.passive.WolfEntity;
@@ -104,6 +107,7 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.network.datasync.EntityDataManager.DataEntry;
 import net.minecraft.particles.ParticleTypes;
+import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.server.management.PreYggdrasilConverter;
@@ -125,6 +129,7 @@ import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
@@ -184,6 +189,7 @@ public class DogEntity extends AbstractDogEntity {
     private int healingTick;
     private int prevHealingTick;
     private int xpCollectCooldown;
+    private boolean alterationsNeedUpdate;
 
     private float headRotationCourse;
     private float headRotationCourseOld;
@@ -202,6 +208,7 @@ public class DogEntity extends AbstractDogEntity {
         super(type, worldIn);
         this.setTame(false);
         this.setGender(EnumGender.random(this.getRandom()));
+        ChopinLogger.l("A dog constructor have been called"); 
     }
 
     @Override
@@ -225,6 +232,7 @@ public class DogEntity extends AbstractDogEntity {
 
     @Override
     protected void registerGoals() {
+        //!! This function is called by the super constructor, so any field belongs to this class (not super class) isn't avaliable to this function 
         this.goalSelector.addGoal(1, new SwimGoal(this));
         this.goalSelector.addGoal(1, new FindWaterGoal(this));
         //this.goalSelector.addGoal(1, new PatrolAreaGoal(this));
@@ -282,6 +290,10 @@ public class DogEntity extends AbstractDogEntity {
 
     public boolean isDogWet() {
         return this.wetSource != null;
+    }
+
+    public void setDogWet(WetSource wetSource) {
+        this.wetSource = wetSource;
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -351,7 +363,7 @@ public class DogEntity extends AbstractDogEntity {
     @Override
     public void tick() {
         super.tick();
-
+        
         if (this.isAlive()) {
             this.headRotationCourseOld = this.headRotationCourse;
             if (this.isBegging()) {
@@ -395,9 +407,9 @@ public class DogEntity extends AbstractDogEntity {
 
                 if (this.timeWolfIsShaking > 0.4F) {
                     float f = (float)this.getY();
-                    int i = (int)(MathHelper.sin((this.timeWolfIsShaking - 0.4F) * (float)Math.PI) * 7.0F);
+                    int i = (int)(MathHelper.sin((this.timeWolfIsShaking - 0.4F) * (float)Math.PI) * 7.0F); // x = 7sin(pix)
                     Vector3d vec3d = this.getDeltaMovement();
-
+ 
                     for (int j = 0; j < i; ++j) {
                         float f1 = (this.random.nextFloat() * 2.0F - 1.0F) * this.getBbWidth() * 0.5F;
                         float f2 = (this.random.nextFloat() * 2.0F - 1.0F) * this.getBbWidth() * 0.5F;
@@ -476,7 +488,7 @@ public class DogEntity extends AbstractDogEntity {
                 this.healingTick = 0;
             }
 
-            //Scan for XP
+            //Scan for XP BETA
             if (this.tickCount > this.xpCollectCooldown) {
                 List<ExperienceOrbEntity> list = this.level.getEntitiesOfClass(ExperienceOrbEntity.class, this.getBoundingBox().inflate(2.5D, 1D, 2.5D), null);
                 int totalxp = 0;
@@ -512,7 +524,19 @@ public class DogEntity extends AbstractDogEntity {
         }
 
         this.alterations.forEach((alter) -> alter.livingTick(this));
-        
+        if (this.alterationsNeedUpdate) {
+            this.markAccessoriesDirty();
+            this.alterationsNeedUpdate = false;
+        }
+
+        //if (ChopinLoggerGUI.onlineGUI != null && ChopinLoggerGUI.onlineGUI.getWatcher("DogDeltaMovement").getWatchee()==this) { 
+        //    ChopinLoggerGUI.onlineGUI.getWatcher("DogDeltaMovement").updateValue();
+        //}
+
+    }
+
+    public void setAlterationNeedUpdate() {
+        this.alterationsNeedUpdate = true;
     }
 
     @Override
@@ -533,7 +557,44 @@ public class DogEntity extends AbstractDogEntity {
                 if (!this.level.isClientSide) this.dropAllClaimedExperience();
 
                 return ActionResultType.SUCCESS;
+            //Debug chopin
+            } else if (stack.getItem() == Items.GOLDEN_APPLE) {
+                if (!this.level.isClientSide) {
+                    ChopinLogger.l(this.getName().getString()  + "'s alts class : ");
+                    for (IDogAlteration d_alt : this.alterations) {
+                        ChopinLogger.l(d_alt.getClass().toString());
+                    }
+                    ChopinLogger.l("End");
+                }
+                if (this.level.isClientSide) {
+                    ChopinLogger.l("Is client doggo sitting ? : " + this.isOrderedToSit());
+                } else {
+                    ChopinLogger.l("Is server doggo sitting ? : " + this.isOrderedToSit());
+                }
+                ChopinLogger.l("Mouth is holding : " + this.getBoneVariant().toString());
+                return ActionResultType.SUCCESS;
+            } else if (stack.getItem() == Items.LAPIS_LAZULI) {
+                if (!this.level.isClientSide) {
+                    //if (ChopinLoggerGUI.onlineGUI == null || ChopinLoggerGUI.onlineGUI.isDisposed()) {
+                        //ChopinLoggerGUI.openGUI(this.level);
+                    //} else {
+                        //ChopinLoggerGUI.Watcher<DogEntity> watcher = ((ChopinLoggerGUI.Watcher<DogEntity>) ChopinLoggerGUI.onlineGUI.getWatcher("DogDeltaMovement"));
+                        //watcher.setWatchee(this);
+                        
+                    //}
+                }
+                return ActionResultType.SUCCESS;
+            } else if (stack.getItem() == Items.LADDER) {
+                if (this.level.isClientSide) {
+                    return ActionResultType.SUCCESS;
+                }
+                List<DogEntity> dogs = this.level.getEntitiesOfClass(DogEntity.class, this.getBoundingBox().inflate(5.0f), (dog) -> dog != this);
+                if (!dogs.isEmpty()) {
+                    this.startRiding(dogs.get(0));
+                }
+                return ActionResultType.SUCCESS;
             }
+            //End Debug chopin
         } else { // Not tamed
             if (stack.getItem() == Items.BONE || stack.getItem() == DoggyItems.TRAINING_TREAT.get()) {
 
@@ -617,6 +678,7 @@ public class DogEntity extends AbstractDogEntity {
         return super.canTrample(state, pos, fallDistance);
     }
 
+    /*
     @Override
     public boolean causeFallDamage(float distance, float damageMultiplier) {
         for (IDogAlteration alter : this.alterations) {
@@ -628,9 +690,50 @@ public class DogEntity extends AbstractDogEntity {
                 return false;
             }
         }
-
+    
         return super.causeFallDamage(distance, damageMultiplier);
     }
+    */
+
+    @Override
+    public boolean causeFallDamage(float distance, float damageMultiplier) {
+        for (IDogAlteration alter : this.alterations) {
+            ActionResultType result = alter.onLivingFall(this, distance, damageMultiplier);
+
+            if (result.shouldSwing()) {
+                return true;
+            } else if (result == ActionResultType.FAIL) {
+                return false;
+            }
+        }
+    
+
+        //Forge Stuffs
+        float[] ret = net.minecraftforge.common.ForgeHooks.onLivingFall(this, distance, damageMultiplier);
+        if (ret == null) return false;
+        distance = ret[0];
+        damageMultiplier = ret[1];
+  
+        
+        //Calculate fall damage first
+        int i = this.calculateFallDamage(distance, damageMultiplier);
+
+        if (i > 0) {
+            //if the dog do actually take fall damage then hurt the passagers
+            if (this.isVehicle()) {
+                for(Entity e : this.getPassengers()) {
+                   e.hurt(DamageSource.FALL, (float)i);
+                }
+            }
+
+           this.playSound(this.getFallDamageSound(i), 1.0F, 1.0F);
+           this.playBlockFallSound();
+           this.hurt(DamageSource.FALL, (float)i);
+           return true;
+        } else {
+           return false;
+        }
+     }
 
     // TODO
     @Override
@@ -702,6 +805,7 @@ public class DogEntity extends AbstractDogEntity {
 
     @Override
     public boolean canAttack(LivingEntity target) {
+
         if (this.isMode(EnumMode.DOCILE)) {
             return false;
         }
@@ -785,7 +889,7 @@ public class DogEntity extends AbstractDogEntity {
         for (IDogAlteration alter : this.alterations) {
             ActionResult<Float> result = alter.attackEntityFrom(this, source, amount);
 
-            // TODO
+            // TODO chopin
             if (result.getResult() == ActionResultType.FAIL) {
                 return false;
             } else {
@@ -799,7 +903,7 @@ public class DogEntity extends AbstractDogEntity {
             Entity entity = source.getEntity();
             // Must be checked here too as hitByEntity only applies to when the dog is
             // directly hit not indirect damage like sweeping effect etc
-            // Currently dog cannot handle sweeping effect when FF is off hahahahahahahahahaha
+            // Currently dog cannot handle sweeping effect when FF is off ........
             if (entity instanceof PlayerEntity && !this.canPlayersAttack()) {
                 return false;
             }
@@ -810,7 +914,12 @@ public class DogEntity extends AbstractDogEntity {
                 amount = (amount + 1.0F) / 2.0F;
             }
 
-            return super.hurt(source, amount);
+            //ChopinLogger.l("Does " + this.getName().getString() + " has shield? :" + this.isDamageSourceBlocked(source));
+            
+            //if (this.getHealth() <= amount) {
+            //    return super.hurt(source, 0);
+            //}
+            return super.hurt(source, amount); 
         }
     }
 
@@ -976,9 +1085,9 @@ public class DogEntity extends AbstractDogEntity {
     @Override
     public void setTame(boolean tamed) {
         super.setTame(tamed);
-        ChopinLogger.LOGGER.info("in setTame");
+        ChopinLogger.l("in setTame");
         for (IDogAlteration x : this.alterations) {
-            ChopinLogger.LOGGER.info(
+            ChopinLogger.l(
                 x.toString()                 
             );
         }
@@ -1031,7 +1140,7 @@ public class DogEntity extends AbstractDogEntity {
         return stack.getItem().is(DoggyTags.BREEDING_ITEMS);
     }
 
-    @Override
+    @Override 
     public boolean canMate(AnimalEntity otherAnimal) {
         if (otherAnimal == this) {
             return false;
@@ -1039,7 +1148,7 @@ public class DogEntity extends AbstractDogEntity {
             return false;
         } else if (!(otherAnimal instanceof DogEntity)) {
             return false;
-        } else {
+        } else {    
             DogEntity entitydog = (DogEntity) otherAnimal;
             if (!entitydog.isTame()) {
                 return false;
@@ -1176,7 +1285,7 @@ public class DogEntity extends AbstractDogEntity {
 
         this.alterations.forEach((alter) -> alter.onDeath(this, cause));
         super.die(cause);
-
+        
         // Save inventory after onDeath is called so that pack puppy inventory
         // can be dropped and not saved
         if (this.level != null && !this.level.isClientSide) {
@@ -1366,7 +1475,7 @@ public class DogEntity extends AbstractDogEntity {
         }
 
         super.load(compound);
-        ChopinLogger.LOGGER.info(this.getName().getString() + " is loaded !");
+        ChopinLogger.l(this.getName().getString() + " is loaded !");
     }
 
     @Override
@@ -1519,7 +1628,7 @@ public class DogEntity extends AbstractDogEntity {
         try {
             this.statsTracker.readAdditional(compound);
             this.damagedealt = this.statsTracker.getDamageDealt();
-            //ChopinLogger.LOGGER.info( this.getName().getString() + " dealt : " + Float.toString(this.statsTracker.getDamageDealt())); 
+            //ChopinLogger.l( this.getName().getString() + " dealt : " + Float.toString(this.statsTracker.getDamageDealt())); 
         } catch (Exception e) {
             DoggyTalents2.LOGGER.error("Failed to load stats tracker: " + e.getMessage());
             e.printStackTrace();
@@ -1533,7 +1642,7 @@ public class DogEntity extends AbstractDogEntity {
             }
         });
 
-        ChopinLogger.LOGGER.info(this.getName().getString() + " is read !");
+        ChopinLogger.l(this.getName().getString() + " is read !");
 
     }
 
@@ -1645,7 +1754,7 @@ public class DogEntity extends AbstractDogEntity {
 
         this.getAccessories().clear();
         this.markDataParameterDirty(ACCESSORIES.get());
-        return removed;
+        return removed; //? chopin
     }
 
     public Optional<AccessoryInstance> getAccessory(AccessoryType typeIn) {
@@ -2112,12 +2221,15 @@ public class DogEntity extends AbstractDogEntity {
     @Override
     public Entity getControllingPassenger() {
         // Gets the first passenger which is the controlling passenger
-        return this.getPassengers().isEmpty() ? null : (Entity) this.getPassengers().get(0);
+        return this.getPassengers().isEmpty() ? null : (
+            (Entity) this.getPassengers().get(0).getEntity() instanceof PlayerEntity ? 
+                this.getPassengers().get(0).getEntity()
+                : null);
     }
 
     @Override
     public boolean canBeControlledByRider() {
-        return this.getControllingPassenger() instanceof LivingEntity;
+        return this.getControllingPassenger() instanceof PlayerEntity;
     }
 
     //TODO
@@ -2180,19 +2292,26 @@ public class DogEntity extends AbstractDogEntity {
                 this.maxUpStep = 1.0F;
 
                 float straf = livingentity.xxa * 0.7F;
-                float foward = livingentity.zza;
+                float forward = livingentity.zza;
 
                 // If moving backwards half the speed
-                if (foward <= 0.0F) {
-                   foward *= 0.5F;
+                if (forward <= 0.0F) {
+                   forward *= 0.5F;
                 }
 
-                if (this.jumpPower > 0.0F && !this.isDogJumping() && this.isOnGround()) {
+                if (this.jumpPower > 0.0F && !this.isDogJumping() && (this.isOnGround() || this.isInWater() || this.isInLava() )) {
 
                     // Calculate jump value based of jump strength, power this jump and jump boosts
                     double jumpValue = this.getAttribute(DoggyAttributes.JUMP_POWER.get()).getValue() * this.getBlockJumpFactor() * this.jumpPower; //TODO do we want getJumpFactor?
                     if (this.hasEffect(Effects.JUMP)) {
                         jumpValue += (this.getEffect(Effects.JUMP).getAmplifier() + 1) * 0.1F;
+                    }
+
+                    if (this.isInWater()) {
+                        jumpValue *= 0.5f;
+                    }
+                    if (this.isInLava()) {
+                        jumpValue *= 0.25f;
                     }
 
                     // Apply jump
@@ -2202,7 +2321,7 @@ public class DogEntity extends AbstractDogEntity {
                     this.hasImpulse = true;
 
                     // If moving forward, propel further in the direction
-                    if (foward > 0.0F) {
+                    if (forward > 0.0F) {
                         final float amount = 0.4F; // TODO Allow people to change this value
                         float compX = MathHelper.sin(this.yRot * ((float)Math.PI / 180F));
                         float compZ = MathHelper.cos(this.yRot * ((float)Math.PI / 180F));
@@ -2216,17 +2335,27 @@ public class DogEntity extends AbstractDogEntity {
 
                 this.flyingSpeed = this.getSpeed() * 0.1F;
                 if (this.isControlledByLocalInstance()) {
-                    // Set the move speed and move the dog in the direction of the controlling entity
+                    // Set the move speed and move the dog in the direction of the controlling entity (on client)
                     this.setSpeed((float)this.getAttribute(Attributes.MOVEMENT_SPEED).getValue() * 0.5F);
-                    super.travel(new Vector3d(straf, positionIn.y, foward));
+                    super.travel(new Vector3d(straf, positionIn.y, forward));
+                    ChopinLogger.l(
+                        "Delta movment "
+                        + (this.level.isClientSide ? "on client " : "on server ")
+                        + this.getDeltaMovement()
+                    );
                     this.lerpSteps = 0;
                 } else if (livingentity instanceof PlayerEntity) {
-                    // A player is riding and can not control then
+                    // A player is riding and can not control then (on server)
+                    ChopinLogger.l(
+                        "Delta movment "
+                        + (this.level.isClientSide ? "on client " : "on server ")
+                        + this.getDeltaMovement()
+                    );
                     this.setDeltaMovement(Vector3d.ZERO);
                 }
 
                 // Once the entity reaches the ground again allow it to jump again
-                if (this.isOnGround()) {
+                if (this.isOnGround() || this.isInWater() || this.isInLava() ) {
                     this.jumpPower = 0.0F;
                     this.setDogJumping(false);
                 }
@@ -2243,6 +2372,11 @@ public class DogEntity extends AbstractDogEntity {
 
                 this.animationSpeed += (f4 - this.animationSpeed) * 0.4F;
                 this.animationPosition += this.animationSpeed;
+
+                if (this.onClimbable()) {
+                    this.fallDistance = 0.0f;
+                }
+
              } else {
                  this.maxUpStep = 0.5F; // Default
                  this.flyingSpeed = 0.02F; // Default
@@ -2278,6 +2412,7 @@ public class DogEntity extends AbstractDogEntity {
                         this.statsTracker.increaseDistanceSneaking(l);
                     } else {
                         this.statsTracker.increaseDistanceWalk(l);
+                        //ChopinLogger.l(this.getName().getString() + "'s distance walking increased on thread.");
                     }
                 }
             } else { // Time in air
@@ -2331,5 +2466,10 @@ public class DogEntity extends AbstractDogEntity {
     public boolean canBeLeashed(PlayerEntity player) {
         if(!this.willObeyOthers()) return false;
         else return super.canBeLeashed(player);
+    }
+    @Override
+    public void stopRiding(){
+        if (this.isInWater() && this.getVehicle() instanceof PlayerEntity) return;
+        super.stopRiding();
     }
 }

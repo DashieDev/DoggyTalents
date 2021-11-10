@@ -5,6 +5,7 @@ import java.util.EnumSet;
 import doggytalents.DoggyTags;
 import doggytalents.api.feature.FoodHandler;
 import doggytalents.common.entity.DogEntity;
+import doggytalents.common.item.TreatItem;
 import net.minecraft.entity.EntityPredicate;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.player.PlayerEntity;
@@ -68,6 +69,10 @@ public class DogBegGoal extends Goal {
         for (Hand hand : Hand.values()) {
             ItemStack itemstack = player.getItemInHand(hand);
             if (itemstack.getItem().is(this.dog.isTame() ? DoggyTags.BEG_ITEMS_TAMED : DoggyTags.BEG_ITEMS_UNTAMED)) {
+                return true;
+            }
+
+            if (itemstack.getItem().is(DoggyTags.TREATS)) {
                 return true;
             }
 

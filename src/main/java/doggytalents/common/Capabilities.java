@@ -1,5 +1,7 @@
 package doggytalents.common;
 
+import doggytalents.ChopinLogger;
+import doggytalents.common.inventory.DogHotSlotItemHandler;
 import doggytalents.common.inventory.PackPuppyItemHandler;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -27,6 +29,7 @@ public class Capabilities {
                         nbtTagList.add(itemTag);
                     }
                 }
+                ChopinLogger.l("in cap::packpuppy::writeNBT");
                 return nbtTagList;
             }
 
@@ -41,7 +44,21 @@ public class Capabilities {
                         instance.setStackInSlot(j, ItemStack.of(itemTags));
                     }
                 }
+                ChopinLogger.l("in cap::packpuppy::readNBT");
             }
         }, PackPuppyItemHandler::new);
+        
+        CapabilityManager.INSTANCE.register(DogHotSlotItemHandler.class,
+             new Capability.IStorage<DogHotSlotItemHandler>() {
+                @Override
+                public INBT writeNBT(Capability<DogHotSlotItemHandler> capability, DogHotSlotItemHandler instance, Direction side)  {
+                    return null;
+                }
+
+                @Override
+                public void readNBT(Capability<DogHotSlotItemHandler> capability, DogHotSlotItemHandler instance, Direction side, INBT base)  { 
+                }
+             }, DogHotSlotItemHandler::new);
+        
     }
 }

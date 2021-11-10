@@ -28,6 +28,7 @@ import doggytalents.common.event.EventHandler;
 import doggytalents.common.lib.Constants;
 import doggytalents.common.network.PacketHandler;
 import doggytalents.common.util.BackwardsComp;
+import doggytalents.common.util.ChopinLoggerGUI;
 import net.minecraft.client.Minecraft;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.IReloadableResourceManager;
@@ -63,6 +64,8 @@ public class DoggyTalents2 {
 
     public DoggyTalents2() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+
+        //ChopinLoggerGUI.allowSwingGUI();
 
         // Mod lifecycle
         modEventBus.addListener(this::gatherData);
@@ -167,6 +170,7 @@ public class DoggyTalents2 {
         if (event.includeServer()) {
             // gen.addProvider(new DTBlockTagsProvider(gen));
             gen.addProvider(new DTAdvancementProvider(gen));
+            ChopinLogger.l("Advancement generated !");
             DTBlockTagsProvider blockTagProvider = new DTBlockTagsProvider(gen, event.getExistingFileHelper());
             gen.addProvider(blockTagProvider);
             gen.addProvider(new DTItemTagsProvider(gen, blockTagProvider, event.getExistingFileHelper()));

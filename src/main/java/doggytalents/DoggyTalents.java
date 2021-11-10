@@ -11,6 +11,7 @@ import doggytalents.common.talent.BlackPeltTalent;
 import doggytalents.common.talent.CreeperSweeperTalent;
 import doggytalents.common.talent.DoggyDashTalent;
 import doggytalents.common.talent.DoggyTorchTalent;
+import doggytalents.common.talent.FarmerDoggoTalent;
 import doggytalents.common.talent.FisherDogTalent;
 import doggytalents.common.talent.GuardDogTalent;
 import doggytalents.common.talent.HappyEaterTalent;
@@ -25,7 +26,10 @@ import doggytalents.common.talent.RescueDogTalent;
 import doggytalents.common.talent.RoaringGaleTalent;
 import doggytalents.common.talent.ShepherdDogTalent;
 import doggytalents.common.talent.SwimmerDogTalent;
+import doggytalents.common.talent.ToolUtilizerTalent;
+import doggytalents.common.talent.WaterStorageTalent;
 import doggytalents.common.talent.WolfMountTalent;
+import net.minecraft.block.TallFlowerBlock;
 import net.minecraftforge.fml.RegistryObject;
 import net.minecraftforge.registries.DeferredRegister;
 
@@ -55,6 +59,9 @@ public class DoggyTalents {
     public static final RegistryObject<Talent> SWIMMER_DOG = registerInst("swimmer_dog", SwimmerDogTalent::new);
     public static final RegistryObject<Talent> WOLF_MOUNT = registerInst("wolf_mount", WolfMountTalent::new);
     public static final RegistryObject<Talent> DOGGY_TORCH = registerInst("doggy_torch", DoggyTorchTalent::new);
+    public static final RegistryObject<Talent> FARMER_DOGGO = registerInst("farmer_doggo", FarmerDoggoTalent::new);
+    public static final RegistryObject<Talent> WATER_STORAGE = registerInst("water_storage", WaterStorageTalent::new);
+    public static final RegistryObject<Talent> TOOL_UTILIZER = registerInst("tool_utilizer", ToolUtilizerTalent::new);
 
     private static <T extends Talent> RegistryObject<Talent> registerInst(final String name, final BiFunction<Talent, Integer, TalentInstance> sup) {
         return register(name, () -> new Talent(sup));

@@ -1,12 +1,17 @@
 [SOLVED] [PARTIALLY_IMPLEMENTED] Implement Stattrack and its GUI
 [SOLVED] [PARTIALLY_IMPLEMENTED] Make doggo can collect XP
-[SOLVED] fix roaring gale
-[SOLVED] fix heeling command
+[SOLVED] [NOT_IMPLEMENTED] [ADVANCEMENTS] implement advancements
+[SOLVED] [COMMITED] fix roaring gale
+[PARTIALLY_SOLVED] [COMMITED] fix heeling command
 [SOLVED] Add Death Counts
 [SOLVED] Add Health bar in main GUI
 [SOLVED] [F*CK] disable dog l**shing (optionally)
+[SOLVED] [FOUNDATION_IMPLEMENTED] [TALENT] WaterStorage Doggo
+[SOLVED] [FOUNDATION_IMPLEMENTED] [TALENT] Farmer doggos
+[SOLVED] Fix doggo dismounting from head tp-ing back to water source where previously swim in it with doggo in head
+[I_KNOW_WHY] Fix dog push_back
 [CONFIRMATION] [SOLVED] untame confirmation
-[SOLVED] Make Enchantments work on Armor
+[SOLVED] [WITH_CATCHES] Make Enchantments work on Armor
 [GUI] Add Armor and Acessories GUI
 [COMMAND] Add list command to list all dogs
 [COMMAND] Add tpd command to teleport dogs
@@ -16,7 +21,6 @@
 [BUG] Make so that owner doesnt take fall damage when riding a dog to an extent
 [BUG] Fix all unfixed reported bugs
 Stop Berserker Mode Attacking Creeper and make attacking Creepers work exlucsively on the respective Talent
-Fix doggo dismounting from head tp-ing back to water source where previously swim in it with doggo in head
 Add negative effects when the dog Hunger reaches 0
 Fix Patrol Mode, made it more practical
 Add dynamic follow range
@@ -28,5 +32,24 @@ Make dog can hold totem of undying
 [EASTER_EGG] [HARD] Make dog chasing their tail while listening to Chopin Op 64 No 1
 [TALENT] [HARD] Make dog fly
 [TALENT] make tactical dog attack from a longer distance
-[TALENT] Farmer doggo
 [TALENT] Miner doggos
+Make dog dynamically pausing attack on target if another target is more danger to either owner or dog
+Dog berrybush ??? 
+[TALENT] Crafting Table Dog XD
+Add Dog Count tracker
+Add Offense Blacklist/Whitelists
+Learn about the render of the mouth items
+Add 3-item dog hotbar containter
+Make so that u can ride ur dog in lava
+And make the dog hellhound treat lava like water or land
+A proper training system which make interacting with the dog more fun
+Make if you utilize the Rescue Dog talent too much, the dog gonna get the effect Healing Exhaustion which will
+    temporary make the dog unables to heal you and himselft, and regen hunger mroe slowly
+    and the effects only being removed when you rest in the bed
+If dog hunger reaches 0 the dog will occasionally take damage
+Make dog more vulnerable as a target to enermy. (maybe and somehow and moderately and confingurably)
+Make dog cares about other dogs
+Resolve the dog bed claming interference (dog locking the bed when seat)
+Make only the owner of the dog can access the dog's inventory
+
+[SOLVED] [BASIC_JAVA] DogEntity -> is class default fields got init ? 

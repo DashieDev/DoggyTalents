@@ -29,7 +29,7 @@ public class BoneLayer extends LayerRenderer<DogEntity, DogModel<DogEntity>> {
                 matrixStack.translate(0.0F, 5.0F / 16.0F, 2.0F / 16.0F);
             }
 
-            model.head.translateAndRotate(matrixStack);
+            model.head.translateAndRotate(matrixStack); //Make the matrix rotate according to the head
 
             matrixStack.translate(-0.025F, 0.125F, -0.32F);
             matrixStack.mulPose(Vector3f.YP.rotationDegrees(45.0F));

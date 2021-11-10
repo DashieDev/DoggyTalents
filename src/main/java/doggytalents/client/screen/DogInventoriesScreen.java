@@ -5,6 +5,7 @@ import java.util.Optional;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 
+import doggytalents.ChopinLogger;
 import doggytalents.DoggyAccessories;
 import doggytalents.api.registry.AccessoryInstance;
 import doggytalents.client.screen.widget.SmallButton;
@@ -109,6 +110,7 @@ public class DogInventoriesScreen extends ContainerScreen<DogInventoriesContaine
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
        InputMappings.Input mouseKey = InputMappings.getKey(keyCode, scanCode);
+       ChopinLogger.l("" + keyCode);
        if (this.minecraft.options.keyInventory.isActiveAndMatches(mouseKey)) {
            if (this.inventory.player.abilities.instabuild) {
                this.minecraft.setScreen(new CreativeScreen(this.inventory.player));
