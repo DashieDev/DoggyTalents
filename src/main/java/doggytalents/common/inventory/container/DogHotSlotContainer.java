@@ -104,8 +104,7 @@ public class DogHotSlotContainer extends Container {
                 if (!moveItemStackTo(itemstack1, 0, this.slots.size() - this.dogSlots.size(), true)) {
                     return ItemStack.EMPTY;
                 }
-            }
-            else if (!moveItemStackTo(itemstack1, this.slots.size() - this.dogSlots.size(), this.slots.size(), false)) {
+            } else if (!moveItemStackTo(itemstack1, this.slots.size() - this.dogSlots.size(), this.slots.size(), false)) {
                 return ItemStack.EMPTY;
             }
 

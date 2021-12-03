@@ -29,7 +29,6 @@ public class Capabilities {
                         nbtTagList.add(itemTag);
                     }
                 }
-                ChopinLogger.l("in cap::packpuppy::writeNBT");
                 return nbtTagList;
             }
 
@@ -44,7 +43,6 @@ public class Capabilities {
                         instance.setStackInSlot(j, ItemStack.of(itemTags));
                     }
                 }
-                ChopinLogger.l("in cap::packpuppy::readNBT");
             }
         }, PackPuppyItemHandler::new);
         

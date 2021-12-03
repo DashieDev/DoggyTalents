@@ -1,14 +1,15 @@
+[SOLVED] [MAINSTREAM] [BUG] Make so that owner doesnt take fall damage when riding a dog to an extent
+[SOLVED] [MAINSTREAM] fix roaring gale
 [SOLVED] [PARTIALLY_IMPLEMENTED] Implement Stattrack and its GUI
 [SOLVED] [PARTIALLY_IMPLEMENTED] Make doggo can collect XP
 [SOLVED] [NOT_IMPLEMENTED] [ADVANCEMENTS] implement advancements
-[SOLVED] [COMMITED] fix roaring gale
 [PARTIALLY_SOLVED] [COMMITED] fix heeling command
 [SOLVED] Add Death Counts
 [SOLVED] Add Health bar in main GUI
 [SOLVED] [F*CK] disable dog l**shing (optionally)
 [SOLVED] [FOUNDATION_IMPLEMENTED] [TALENT] WaterStorage Doggo
 [SOLVED] [FOUNDATION_IMPLEMENTED] [TALENT] Farmer doggos
-[SOLVED] Fix doggo dismounting from head tp-ing back to water source where previously swim in it with doggo in head
+[I_KNOW_WHY] Fix doggo dismounting from head tp-ing back to water source where previously swim in it with doggo in head
 [I_KNOW_WHY] Fix dog push_back
 [CONFIRMATION] [SOLVED] untame confirmation
 [SOLVED] [WITH_CATCHES] Make Enchantments work on Armor
@@ -18,7 +19,6 @@
 [COMMAND] Make locate command output proper coordinates in cheats
 [GUI] Redesign Dog Main Menu GUI
 [DATA_ENTRY] Add dog list database/entry
-[BUG] Make so that owner doesnt take fall damage when riding a dog to an extent
 [BUG] Fix all unfixed reported bugs
 Stop Berserker Mode Attacking Creeper and make attacking Creepers work exlucsively on the respective Talent
 Add negative effects when the dog Hunger reaches 0
@@ -27,8 +27,8 @@ Add dynamic follow range
 [TALENT] [HARD] Make dog dive, which made SwimmerDoggo more practical
 Make dog can hold totem of undying
 [TALENT] [HARD] Make dog go get other dog
-[TALENT] Make dog explode, boom haha (while not causing any harm to allies)
-[TALENT] [MEDIUM_HARD] Implements Ranged Attacker
+[TALENT] Make dog explode, oom haha (while not causing any harm to allies)
+[TALENT] [MEDIUM_HARD] Implements Ranged Attbacker
 [EASTER_EGG] [HARD] Make dog chasing their tail while listening to Chopin Op 64 No 1
 [TALENT] [HARD] Make dog fly
 [TALENT] make tactical dog attack from a longer distance
@@ -38,7 +38,7 @@ Dog berrybush ???
 [TALENT] Crafting Table Dog XD
 Add Dog Count tracker
 Add Offense Blacklist/Whitelists
-Learn about the render of the mouth items
+[OK] Learn about the render of the mouth items
 Add 3-item dog hotbar containter
 Make so that u can ride ur dog in lava
 And make the dog hellhound treat lava like water or land
@@ -50,6 +50,8 @@ If dog hunger reaches 0 the dog will occasionally take damage
 Make dog more vulnerable as a target to enermy. (maybe and somehow and moderately and confingurably)
 Make dog cares about other dogs
 Resolve the dog bed claming interference (dog locking the bed when seat)
-Make only the owner of the dog can access the dog's inventory
+[SOLVED] [MAINSTREAM] Make only the owner of the dog can access the dog's inventory
+[SOLVED] [MAINSTREAM] fix the inventory button hightlight check
+update wiki
 
 [SOLVED] [BASIC_JAVA] DogEntity -> is class default fields got init ? 

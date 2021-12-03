@@ -133,7 +133,7 @@ public class FindWaterGoal extends Goal {
     /**
      *
      * @param entityIn The entity
-     * @return
+     * @return true if the dog is in fire.
      */
     public boolean isInDangerSpot(Entity entityIn) {
         AxisAlignedBB bb = entityIn.getBoundingBox();

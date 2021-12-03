@@ -60,8 +60,8 @@ public class DogHotSlotItemHandler extends ItemStackHandler {
         return -1;
     }
 
-    public int getItemSlotIfExitst(Class<? extends Item> x) {
-        for (int i = 0; i < this.stacks.size(); ++i) {
+    public byte getItemSlotIfExitst(Class<? extends Item> x) {
+        for (byte i = 0; i < this.stacks.size(); ++i) {
             if (this.stacks.get(i).getItem().getClass() == x) {
                 return i; 
             }

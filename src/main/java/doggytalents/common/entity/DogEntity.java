@@ -27,6 +27,7 @@ import doggytalents.DoggyEntityTypes;
 import doggytalents.DoggyItems;
 import doggytalents.DoggySerializers;
 import doggytalents.DoggyTags;
+import doggytalents.DoggyTalents;
 import doggytalents.DoggyTalents2;
 import doggytalents.api.enu.WetSource;
 import doggytalents.api.feature.DataKey;
@@ -58,10 +59,16 @@ import doggytalents.common.entity.ai.GuardModeGoal;
 import doggytalents.common.entity.ai.MoveToBlockGoal;
 import doggytalents.common.entity.ai.OwnerHurtByTargetGoal;
 import doggytalents.common.entity.ai.OwnerHurtTargetGoal;
+import doggytalents.common.entity.ai.SwimChopinGoal;
 import doggytalents.common.entity.serializers.DimensionDependantArg;
 import doggytalents.common.entity.stats.StatsTracker;
+import doggytalents.common.network.PacketHandler;
+import doggytalents.common.network.packet.ParticlePackets.CritEmitterPacket;
+import doggytalents.common.network.packet.data.ParticleData.CritEmitterData;
 import doggytalents.common.storage.DogLocationStorage;
 import doggytalents.common.storage.DogRespawnStorage;
+import doggytalents.common.talent.PackPuppyTalent;
+import doggytalents.common.talent.ToolUtilizerTalent;
 import doggytalents.common.util.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -75,6 +82,7 @@ import net.minecraft.entity.Pose;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
+import net.minecraft.entity.ai.attributes.AttributeModifier.Operation;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.HurtByTargetGoal;
 import net.minecraft.entity.ai.goal.LeapAtTargetGoal;
@@ -107,7 +115,9 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.network.datasync.EntityDataManager.DataEntry;
 import net.minecraft.particles.ParticleTypes;
+import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.pathfinding.PathNodeType;
+import net.minecraft.pathfinding.SwimmerPathNavigator;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.server.management.PreYggdrasilConverter;
@@ -131,6 +141,7 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
@@ -141,6 +152,7 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.ITeleporter;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 
 public class DogEntity extends AbstractDogEntity {
@@ -184,8 +196,12 @@ public class DogEntity extends AbstractDogEntity {
 
     public final StatsTracker statsTracker = new StatsTracker();
 
+    private static final UUID HUNGER_MOVEMENT = UUID.fromString("50671f49-1dfd-4397-242b-78bb6b178115");
+
+
     private int hungerTick;
     private int prevHungerTick;
+    private int hungerDamageTick;
     private int healingTick;
     private int prevHealingTick;
     private int xpCollectCooldown;
@@ -197,6 +213,8 @@ public class DogEntity extends AbstractDogEntity {
     private boolean isShaking;
     private float timeWolfIsShaking;
     private float prevTimeWolfIsShaking;
+    private boolean isLowHunger = false;
+    private boolean isZeroHunger = false;
 
     protected boolean dogJumping;
     protected float jumpPower;
@@ -208,7 +226,6 @@ public class DogEntity extends AbstractDogEntity {
         super(type, worldIn);
         this.setTame(false);
         this.setGender(EnumGender.random(this.getRandom()));
-        ChopinLogger.l("A dog constructor have been called"); 
     }
 
     @Override
@@ -233,10 +250,10 @@ public class DogEntity extends AbstractDogEntity {
     @Override
     protected void registerGoals() {
         //!! This function is called by the super constructor, so any field belongs to this class (not super class) isn't avaliable to this function 
-        this.goalSelector.addGoal(1, new SwimGoal(this));
-        this.goalSelector.addGoal(1, new FindWaterGoal(this));
+        this.goalSelector.addGoal(1, new SwimGoal(this)); //[chopin] prev : 1
+        this.goalSelector.addGoal(1, new FindWaterGoal(this)); //[chopin] prev : 1
         //this.goalSelector.addGoal(1, new PatrolAreaGoal(this));
-        this.goalSelector.addGoal(2, new SitGoal(this));
+        this.goalSelector.addGoal(3, new SitGoal(this)); //[chopin] prev : 2
         //this.goalSelector.addGoal(3, new WolfEntity.AvoidEntityGoal(this, LlamaEntity.class, 24.0F, 1.5D, 1.5D));
         //this.goalSelector.addGoal(4, new LeapAtTargetGoal(this, 0.4F));
         this.goalSelector.addGoal(5, new MeleeAttackGoal(this, 1.0D, true));
@@ -444,6 +461,8 @@ public class DogEntity extends AbstractDogEntity {
         }
 
         if (!this.level.isClientSide) {
+
+            //Hunger Proccess
             if (!ConfigValues.DISABLE_HUNGER) {
                 this.prevHungerTick = this.hungerTick;
 
@@ -463,29 +482,60 @@ public class DogEntity extends AbstractDogEntity {
                     this.setDogHunger(this.getDogHunger() - 1);
                     this.hungerTick -= 400;
                 }
-            }
 
-            this.prevHealingTick = this.healingTick;
-            this.healingTick += 8;
+                if (this.isZeroHunger) {
+                    ++this.hungerDamageTick; 
+                    int hurt_interval = -1; boolean hurt_last_health = false;
+                    switch (this.level.getDifficulty()) {
+                        case EASY : {
+                            hurt_interval =100; break; 
+                        }
+                        case NORMAL : {
+                            hurt_interval =75; break;
+                        }
+                        case HARD : {
+                            hurt_interval = 50; hurt_last_health = true; break;
+                        }
+                        default : {
+                            hurt_interval = -1; break;
+                        }
+                    }
 
-            if (this.isInSittingPose()) {
-                this.healingTick += 4;
-            }
-
-            for (IDogAlteration alter : this.alterations) {
-                ActionResult<Integer> result = alter.healingTick(this, this.healingTick - this.prevHealingTick);
-
-                if (result.getResult().shouldSwing()) {
-                    this.healingTick = result.getObject() + this.prevHealingTick;
+                    //Sorry, i think i need some food...
+                    //var food beg
+                    if (hurt_interval >= 0 && ++this.hungerDamageTick >= hurt_interval && (hurt_last_health || this.getHealth() > 1f))  {
+                        this.hurt(DamageSource.STARVE, 0.5f);
+                        this.hungerDamageTick = 0;
+                    } 
                 }
+
             }
 
-            if (this.healingTick >= 6000) {
-                if (this.getHealth() < this.getMaxHealth()) {
-                    this.heal(1);
+            //Healing proccess
+            if (!this.isLowHunger) {
+                this.prevHealingTick = this.healingTick;
+                this.healingTick += 8;
+
+                if (this.isInSittingPose()) {
+                    this.healingTick += 4;
                 }
 
-                this.healingTick = 0;
+                for (IDogAlteration alter : this.alterations) {
+                    ActionResult<Integer> result = alter.healingTick(this, this.healingTick - this.prevHealingTick);
+
+                    if (result.getResult().shouldSwing()) {
+                        this.healingTick = result.getObject() + this.prevHealingTick;
+                    }
+                }
+
+                if (this.healingTick >= 6000) {
+                    if (this.getHealth() < this.getMaxHealth()) {
+                        this.heal(1);
+                    }
+
+                    this.healingTick = 0;
+                }
+
             }
 
             //Scan for XP BETA
@@ -560,28 +610,18 @@ public class DogEntity extends AbstractDogEntity {
             //Debug chopin
             } else if (stack.getItem() == Items.GOLDEN_APPLE) {
                 if (!this.level.isClientSide) {
-                    ChopinLogger.l(this.getName().getString()  + "'s alts class : ");
-                    for (IDogAlteration d_alt : this.alterations) {
-                        ChopinLogger.l(d_alt.getClass().toString());
-                    }
-                    ChopinLogger.l("End");
+                    Optional<TalentInstance> talent = this.getTalent(DoggyTalents.PACK_PUPPY);
+                    
+                    if (talent.isPresent() && talent.get() instanceof PackPuppyTalent) {
+                        PackPuppyTalent t = (PackPuppyTalent)talent.get();
+                        
+                        t.inventory().setStackInSlot(0, new ItemStack(Items.DIAMOND));
+                    } 
                 }
-                if (this.level.isClientSide) {
-                    ChopinLogger.l("Is client doggo sitting ? : " + this.isOrderedToSit());
-                } else {
-                    ChopinLogger.l("Is server doggo sitting ? : " + this.isOrderedToSit());
-                }
-                ChopinLogger.l("Mouth is holding : " + this.getBoneVariant().toString());
                 return ActionResultType.SUCCESS;
             } else if (stack.getItem() == Items.LAPIS_LAZULI) {
                 if (!this.level.isClientSide) {
-                    //if (ChopinLoggerGUI.onlineGUI == null || ChopinLoggerGUI.onlineGUI.isDisposed()) {
-                        //ChopinLoggerGUI.openGUI(this.level);
-                    //} else {
-                        //ChopinLoggerGUI.Watcher<DogEntity> watcher = ((ChopinLoggerGUI.Watcher<DogEntity>) ChopinLoggerGUI.onlineGUI.getWatcher("DogDeltaMovement"));
-                        //watcher.setWatchee(this);
-                        
-                    //}
+                    this.goalSelector.addGoal(1, new SwimChopinGoal(this));
                 }
                 return ActionResultType.SUCCESS;
             } else if (stack.getItem() == Items.LADDER) {
@@ -646,6 +686,10 @@ public class DogEntity extends AbstractDogEntity {
         }
 
         return actionresulttype;
+    }
+
+    public void setNavigation(PathNavigator pn) {
+        this.navigation = pn;
     }
 
     @Override
@@ -810,6 +854,10 @@ public class DogEntity extends AbstractDogEntity {
             return false;
         }
 
+        if (!this.canSee(target)) {
+            return false;
+        }
+
         for (IDogAlteration alter : this.alterations) {
             ActionResultType result = alter.canAttack(this, target);
 
@@ -955,8 +1003,10 @@ public class DogEntity extends AbstractDogEntity {
             this.statsTracker.increaseDamageDealt(damage);
 
             if (critModifiers != null) {
-                // TODO Might want to make into a packet
-                DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> Minecraft.getInstance().particleEngine.createTrackingEmitter(target, ParticleTypes.CRIT));
+                // Done<chopin> Might want to make into a packet
+                //DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> Minecraft.getInstance().particleEngine.createTrackingEmitter(target, ParticleTypes.CRIT));
+                CritEmitterPacket.sendCritEmitterPacketToNearClients(target);
+                ChopinLogger.lwn(this, " send crit packet on server to client");
             }
         }
 
@@ -1907,6 +1957,7 @@ public class DogEntity extends AbstractDogEntity {
 
     @Override
     public void setDogHunger(float hunger) {
+        
         float diff = hunger - this.getDogHunger();
 
         for (IDogAlteration alter : this.alterations) {
@@ -1922,7 +1973,30 @@ public class DogEntity extends AbstractDogEntity {
     }
 
     private void setHungerDirectly(float hunger) {
+        //Update hunger state
+        if (hunger <= 20 && !this.isLowHunger) { 
+            this.onHungerHighToLow();
+        } else if (hunger > 20 && this.isLowHunger) { 
+            this.onHungerLowToHigh();
+        }
+        if (hunger <= 0) this.isZeroHunger = true;
+        else this.isZeroHunger = false;
+
         this.entityData.set(HUNGER_INT, hunger);
+    }
+
+    private void onHungerHighToLow() { // Also called when the value is first read from nbt when load and is low
+        this.isLowHunger = true;
+        this.setAttributeModifier(Attributes.MOVEMENT_SPEED, HUNGER_MOVEMENT, (d, u) -> 
+            new AttributeModifier(u, "Hunger Slowness", -0.35f, Operation.MULTIPLY_TOTAL) // this operation is mutiply by 1 + x
+        );
+        
+        this.getOwner().sendMessage(new TranslationTextComponent("dog.msg.low_hunger." + this.random.nextInt(3), this.getName()), net.minecraft.util.Util.NIL_UUID);
+    }
+
+    private void onHungerLowToHigh() {
+        this.isLowHunger = false; 
+        this.removeAttributeModifier(Attributes.MOVEMENT_SPEED, HUNGER_MOVEMENT);
     }
 
     public boolean hasCustomSkin() {
@@ -2013,7 +2087,7 @@ public class DogEntity extends AbstractDogEntity {
     }
 
     public boolean canPlayersAttack() {
-        return this.getDogFlag(4);
+        return this.getDogFlag(4); //get bit 00100 = middle finger = can curse....... 
     }
 
     public void set8Flag(boolean collar) {
@@ -2257,12 +2331,6 @@ public class DogEntity extends AbstractDogEntity {
         this.dogJumping = jumping;
     }
 
-//    public double getDogJumpStrength() {
-//        float verticalVelocity = 0.42F + 0.06F * this.TALENTS.getLevel(ModTalents.WOLF_MOUNT);
-//        if (this.TALENTS.getLevel(ModTalents.WOLF_MOUNT) == 5) verticalVelocity += 0.04F;
-//        return verticalVelocity;
-//    }
-
     // 0 - 100 input
     public void setJumpPower(int jumpPowerIn) {
        // if (this.TALENTS.getLevel(ModTalents.WOLF_MOUNT) > 0) {
@@ -2338,19 +2406,9 @@ public class DogEntity extends AbstractDogEntity {
                     // Set the move speed and move the dog in the direction of the controlling entity (on client)
                     this.setSpeed((float)this.getAttribute(Attributes.MOVEMENT_SPEED).getValue() * 0.5F);
                     super.travel(new Vector3d(straf, positionIn.y, forward));
-                    ChopinLogger.l(
-                        "Delta movment "
-                        + (this.level.isClientSide ? "on client " : "on server ")
-                        + this.getDeltaMovement()
-                    );
                     this.lerpSteps = 0;
                 } else if (livingentity instanceof PlayerEntity) {
                     // A player is riding and can not control then (on server)
-                    ChopinLogger.l(
-                        "Delta movment "
-                        + (this.level.isClientSide ? "on client " : "on server ")
-                        + this.getDeltaMovement()
-                    );
                     this.setDeltaMovement(Vector3d.ZERO);
                 }
 

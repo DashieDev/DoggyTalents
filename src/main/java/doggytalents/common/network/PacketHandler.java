@@ -11,6 +11,8 @@ import doggytalents.common.network.packet.FetchStatPacket;
 import doggytalents.common.network.packet.FriendlyFirePacket;
 import doggytalents.common.network.packet.OpenDogHotSlotScreenPacket;
 import doggytalents.common.network.packet.OpenDogScreenPacket;
+import doggytalents.common.network.packet.ParticlePackets.*;
+import doggytalents.common.network.packet.data.ParticleData.*;
 import doggytalents.common.network.packet.RequestSkinPacket;
 import doggytalents.common.network.packet.SendSkinPacket;
 import doggytalents.common.network.packet.data.DogData;
@@ -49,6 +51,7 @@ public final class PacketHandler {
         registerPacket(new RequestUpdateStats(), StatsRequestData.class);
         registerPacket(new FetchStatPacket(), StatsData.class);
         registerPacket(new OpenDogHotSlotScreenPacket(), DogHotSlotScreenData.class);
+        registerPacket(new CritEmitterPacket(), CritEmitterData.class); 
     }
 
     public static <MSG> void send(PacketDistributor.PacketTarget target, MSG message) {

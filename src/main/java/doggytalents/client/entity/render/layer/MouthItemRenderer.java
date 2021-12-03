@@ -43,7 +43,8 @@ public class MouthItemRenderer implements ITalentRenderer<DogEntity> {
             ToolUtilizerTalent t;
             if (inst instanceof ToolUtilizerTalent) {
                 t = (ToolUtilizerTalent) inst;
-                if (t.getSelectedSlot() < 3) 
+                int sel_slot = t.getSelectedSlot();
+                if ( 0 <= sel_slot && sel_slot < 3) 
                 Minecraft.getInstance().getItemInHandRenderer().renderItem(dogIn, t.getSelectedStack() , ItemCameraTransforms.TransformType.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
             } 
             

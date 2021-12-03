@@ -120,6 +120,7 @@ public class ClientEventHandler {
             boolean creative = screen instanceof CreativeScreen;
             DogInventoryButton btn = null;
 
+
             //TODO just create a static variable in this class
             for (Widget widget : screen.buttons) {
                 if (widget instanceof DogInventoryButton) {
@@ -208,11 +209,11 @@ public class ClientEventHandler {
 
     @SubscribeEvent
     public void onPreRenderGameOverlay(final RenderGameOverlayEvent.Post event) {
-        label: if (event.getType() == RenderGameOverlayEvent.ElementType.HEALTHMOUNT) {
+        if (event.getType() == RenderGameOverlayEvent.ElementType.HEALTHMOUNT) {
             Minecraft mc = Minecraft.getInstance();
 
             if (mc.player == null || !(mc.player.getVehicle() instanceof DogEntity)) {
-                break label;
+                return;
             }
 
             MatrixStack stack = event.getMatrixStack();

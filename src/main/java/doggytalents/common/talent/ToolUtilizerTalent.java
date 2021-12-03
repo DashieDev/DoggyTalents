@@ -8,8 +8,6 @@ import doggytalents.common.Screens.DogHotSlotContainerProvider;
 import doggytalents.common.inventory.DogHotSlotItemHandler;
 import doggytalents.common.network.PacketHandler;
 import doggytalents.common.network.packet.data.DogHotSlotScreenData;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -89,6 +87,16 @@ public class ToolUtilizerTalent extends TalentInstance {
     }
 
     public boolean selectItemIfExist(Item x) {
+        int a = this.hSlots.getItemSlotIfExitst(x);
+        if (a >= 0) {
+            this.setSelectedSlot((byte)a);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean selectItemIfExist(Class<? extends Item> x) {
         int a = this.hSlots.getItemSlotIfExitst(x);
         if (a >= 0) {
             this.setSelectedSlot((byte)a);
