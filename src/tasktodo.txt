@@ -53,5 +53,9 @@ Resolve the dog bed claming interference (dog locking the bed when seat)
 [SOLVED] [MAINSTREAM] Make only the owner of the dog can access the dog's inventory
 [SOLVED] [MAINSTREAM] fix the inventory button hightlight check
 update wiki
+Copy the world from the main minecraft which holds the a.i-no-longer-working dog to a debug enviroment and debug the dog
+Make the getNavigation or getMovementController check from the alterations 
+    (talents) (each of them will have an instance of MovementController for diff purpose) 
+    and return the one who meets the requirements
 
 [SOLVED] [BASIC_JAVA] DogEntity -> is class default fields got init ? 

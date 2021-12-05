@@ -52,6 +52,7 @@ import doggytalents.common.entity.ai.BerserkerModeGoal;
 import doggytalents.common.entity.ai.BreedGoal;
 import doggytalents.common.entity.ai.DogBegGoal;
 import doggytalents.common.entity.ai.DogFollowOwnerGoal;
+import doggytalents.common.entity.ai.DogSwimGoal;
 import doggytalents.common.entity.ai.DogWanderGoal;
 import doggytalents.common.entity.ai.FetchGoal;
 import doggytalents.common.entity.ai.FindWaterGoal;
@@ -70,6 +71,7 @@ import doggytalents.common.storage.DogRespawnStorage;
 import doggytalents.common.talent.PackPuppyTalent;
 import doggytalents.common.talent.ToolUtilizerTalent;
 import doggytalents.common.util.*;
+import mezz.jei.network.PacketHandlerClient;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
@@ -83,6 +85,7 @@ import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
 import net.minecraft.entity.ai.attributes.AttributeModifier.Operation;
+import net.minecraft.entity.ai.controller.MovementController;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.HurtByTargetGoal;
 import net.minecraft.entity.ai.goal.LeapAtTargetGoal;
@@ -250,7 +253,7 @@ public class DogEntity extends AbstractDogEntity {
     @Override
     protected void registerGoals() {
         //!! This function is called by the super constructor, so any field belongs to this class (not super class) isn't avaliable to this function 
-        this.goalSelector.addGoal(1, new SwimGoal(this)); //[chopin] prev : 1
+        this.goalSelector.addGoal(1, new DogSwimGoal(this)); //[chopin] prev : 1
         this.goalSelector.addGoal(1, new FindWaterGoal(this)); //[chopin] prev : 1
         //this.goalSelector.addGoal(1, new PatrolAreaGoal(this));
         this.goalSelector.addGoal(3, new SitGoal(this)); //[chopin] prev : 2
@@ -602,7 +605,7 @@ public class DogEntity extends AbstractDogEntity {
                 }
 
                 return ActionResultType.SUCCESS;
-            } else if (stack.getItem() == Items.BOOK && this.canInteract(player)) {
+        } else if (stack.getItem() == Items.BOOK && this.canInteract(player)) {
                 
                 if (!this.level.isClientSide) this.dropAllClaimedExperience();
 
@@ -688,8 +691,14 @@ public class DogEntity extends AbstractDogEntity {
         return actionresulttype;
     }
 
+    //[chopin] temp func
     public void setNavigation(PathNavigator pn) {
         this.navigation = pn;
+    }
+
+    //[chopin] temp func
+    public void setMovementController(MovementController mvctrl) {
+        this.moveControl = mvctrl;
     }
 
     @Override
@@ -845,6 +854,50 @@ public class DogEntity extends AbstractDogEntity {
         }
 
         return Math.min(currentAir, this.getMaxAirSupply());
+    }
+
+    public boolean canSwim() {
+        for (IDogAlteration d_alt : this.alterations) {
+            ActionResultType r = d_alt.canSwim(this);
+            if (r.shouldSwing()) return true;
+        }
+        return false;
+    }
+
+    @Override
+    public MovementController getMoveControl() {
+
+        if (!this.isPassenger() && this.alterations!=null) // Overrided Method may be called via super constructor before init of derived fields
+        for (IDogAlteration d_alt : this.alterations) {
+            ActionResult<MovementController> r = d_alt.getMoveControl(this);
+            if (r.getResult().shouldSwing()) return r.getObject();
+        }
+        
+        return super.getMoveControl();
+    }
+
+    @Override
+    public PathNavigator getNavigation() {
+        if (this.alterations != null) // Overrided Method may be called via super constructor before init of derived f
+        for (IDogAlteration d_alt : this.alterations) {
+            ActionResult<PathNavigator> r = d_alt.getNavigation(this);
+            if (r.getResult().shouldSwing()) return r.getObject();
+        }
+
+        return this.navigation;
+    }
+
+    public void safelyMoveTo(BlockPos pos) {
+        
+        boolean f1 = false;
+        for (IDogAlteration d_alt : this.alterations) { //alterations have the option to mark a block as SAFE but not otherwise 
+            ActionResultType r = d_alt.isBlockSafe(this, pos);
+            if (r.shouldSwing()) {
+                f1 = true; break;
+            }
+        }
+        if (!f1) f1 = EntityUtil.isTeleportFriendlyBlock(this, pos, false);
+        //if (f1) this.moveTo()
     }
 
     @Override

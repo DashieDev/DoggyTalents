@@ -5,8 +5,10 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.ai.controller.MovementController;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ActionResultType;
@@ -181,6 +183,23 @@ public interface IDogAlteration {
     default ActionResultType isPotionApplicable(AbstractDogEntity dogIn, EffectInstance effectIn) {
         return ActionResultType.PASS;
     }
+
+    default ActionResult<MovementController> getMoveControl(AbstractDogEntity dogIn) {
+        return ActionResult.pass(null);
+    }
+
+    default ActionResultType canSwim(AbstractDogEntity dogIn) {
+        return ActionResultType.PASS;
+    }
+
+    default ActionResult<PathNavigator> getNavigation(AbstractDogEntity dogIn) {
+        return ActionResult.pass(null);
+    }
+
+    default ActionResultType isBlockSafe(AbstractDogEntity dogIn, BlockPos pos) {
+        return ActionResultType.PASS;
+    }
+
 
     /**
      * Only called serverside
