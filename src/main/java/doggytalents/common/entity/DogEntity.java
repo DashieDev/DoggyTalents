@@ -225,10 +225,15 @@ public class DogEntity extends AbstractDogEntity {
     protected BlockPos targetBlock;
     public float damagedealt;
 
+    private MovementController defaultMoveControl;
+    private PathNavigator defaultNavigation;
+
     public DogEntity(EntityType<? extends DogEntity> type, World worldIn) {
         super(type, worldIn);
         this.setTame(false);
         this.setGender(EnumGender.random(this.getRandom()));
+        this.defaultMoveControl = this.moveControl;
+        this.defaultNavigation = this.navigation;
     }
 
     @Override
@@ -582,6 +587,23 @@ public class DogEntity extends AbstractDogEntity {
             this.alterationsNeedUpdate = false;
         }
 
+        // Navigation & MovementController tick :
+        if (!this.level.isClientSide && this.isPathFinding()) {
+            this.moveControl = this.defaultMoveControl;
+            this.navigation = this.defaultNavigation;
+            for (IDogAlteration di : this.alterations) {
+                ActionResult<MovementController> r1 = di.getMoveControl(this);
+                ActionResult<PathNavigator> r2 = di.getNavigation(this);
+                
+                if (r1.getResult().shouldSwing()) {
+                    this.moveControl = r1.getObject();
+                }
+                if (r2.getResult().shouldSwing()) {
+                    this.navigation = r2.getObject();
+                }
+            }
+        }
+
         //if (ChopinLoggerGUI.onlineGUI != null && ChopinLoggerGUI.onlineGUI.getWatcher("DogDeltaMovement").getWatchee()==this) { 
         //    ChopinLoggerGUI.onlineGUI.getWatcher("DogDeltaMovement").updateValue();
         //}
@@ -613,13 +635,8 @@ public class DogEntity extends AbstractDogEntity {
             //Debug chopin
             } else if (stack.getItem() == Items.GOLDEN_APPLE) {
                 if (!this.level.isClientSide) {
-                    Optional<TalentInstance> talent = this.getTalent(DoggyTalents.PACK_PUPPY);
-                    
-                    if (talent.isPresent() && talent.get() instanceof PackPuppyTalent) {
-                        PackPuppyTalent t = (PackPuppyTalent)talent.get();
-                        
-                        t.inventory().setStackInSlot(0, new ItemStack(Items.DIAMOND));
-                    } 
+                    //EntityUtil.tryToTeleportNearEntity(this, this.navigation, this.getOwner().blockPosition(), 1);
+                    //this.travel(new Vector3d(0.5, 0, 0));
                 }
                 return ActionResultType.SUCCESS;
             } else if (stack.getItem() == Items.LAPIS_LAZULI) {
@@ -864,30 +881,7 @@ public class DogEntity extends AbstractDogEntity {
         return false;
     }
 
-    @Override
-    public MovementController getMoveControl() {
-
-        if (!this.isPassenger() && this.alterations!=null) // Overrided Method may be called via super constructor before init of derived fields
-        for (IDogAlteration d_alt : this.alterations) {
-            ActionResult<MovementController> r = d_alt.getMoveControl(this);
-            if (r.getResult().shouldSwing()) return r.getObject();
-        }
-        
-        return super.getMoveControl();
-    }
-
-    @Override
-    public PathNavigator getNavigation() {
-        if (this.alterations != null) // Overrided Method may be called via super constructor before init of derived f
-        for (IDogAlteration d_alt : this.alterations) {
-            ActionResult<PathNavigator> r = d_alt.getNavigation(this);
-            if (r.getResult().shouldSwing()) return r.getObject();
-        }
-
-        return this.navigation;
-    }
-
-    public void safelyMoveTo(BlockPos pos) {
+    public boolean isBlockSafe(BlockPos pos) {   //Check if the block itself is safe according alteration
         
         boolean f1 = false;
         for (IDogAlteration d_alt : this.alterations) { //alterations have the option to mark a block as SAFE but not otherwise 
@@ -896,8 +890,8 @@ public class DogEntity extends AbstractDogEntity {
                 f1 = true; break;
             }
         }
-        if (!f1) f1 = EntityUtil.isTeleportFriendlyBlock(this, pos, false);
-        //if (f1) this.moveTo()
+        if (!f1) f1 = DoggyUtil.isBlockSafeDefault(this, pos, false);
+        return f1;
     }
 
     @Override
@@ -1018,7 +1012,7 @@ public class DogEntity extends AbstractDogEntity {
             //ChopinLogger.l("Does " + this.getName().getString() + " has shield? :" + this.isDamageSourceBlocked(source));
             
             //if (this.getHealth() <= amount) {
-            //    return super.hurt(source, 0);
+            //    return false;
             //}
             return super.hurt(source, amount); 
         }
@@ -2045,6 +2039,7 @@ public class DogEntity extends AbstractDogEntity {
         );
         
         this.getOwner().sendMessage(new TranslationTextComponent("dog.msg.low_hunger." + this.random.nextInt(3), this.getName()), net.minecraft.util.Util.NIL_UUID);
+        this.playSound(SoundEvents.WOLF_WHINE, this.getSoundVolume(), this.getVoicePitch());
     }
 
     private void onHungerLowToHigh() {

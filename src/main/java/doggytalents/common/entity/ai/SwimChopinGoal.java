@@ -63,7 +63,7 @@ public class SwimChopinGoal extends Goal {
             if (--this.pathtimeout <= 0 && this.dog.distanceToSqr(this.owner) > 16) {
                 this.pathtimeout = 10;
                 if (this.dog.distanceToSqr(this.owner) > 144) {
-                    EntityUtil.tryToTeleportNearEntityInWater(this.dog, this.dog.getNavigation(), this.owner.blockPosition(), 4);
+                    //EntityUtil.tryToTeleportNearEntityInWater(this.dog, this.dog.getNavigation(), this.owner.blockPosition(), 4);
                 } else {
                     this.dog.getNavigation().moveTo(this.owner, 2f);
                 }

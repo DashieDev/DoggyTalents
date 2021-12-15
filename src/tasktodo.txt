@@ -57,5 +57,6 @@ Copy the world from the main minecraft which holds the a.i-no-longer-working dog
 Make the getNavigation or getMovementController check from the alterations 
     (talents) (each of them will have an instance of MovementController for diff purpose) 
     and return the one who meets the requirements
+Find dog through sound Liszt Totentanz
 
 [SOLVED] [BASIC_JAVA] DogEntity -> is class default fields got init ? 

@@ -1,6 +1,7 @@
 package doggytalents.api.inferface;
 
 import doggytalents.api.enu.WetSource;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -196,7 +197,7 @@ public interface IDogAlteration {
         return ActionResult.pass(null);
     }
 
-    default ActionResultType isBlockSafe(AbstractDogEntity dogIn, BlockPos pos) {
+    default ActionResultType isBlockSafe(AbstractDogEntity dogIn, BlockPos p) {
         return ActionResultType.PASS;
     }
 

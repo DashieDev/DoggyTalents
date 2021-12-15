@@ -47,38 +47,10 @@ public class EntityUtil {
         return false;
     }
 
-    public static boolean tryToTeleportNearEntityInWater(LivingEntity entityIn, PathNavigator navigator, BlockPos targetPos, int radius) {
-        for (int i = 0; i < 10; ++i) {
-            int j = getRandomNumber(entityIn, -radius, radius);
-            int k = getRandomNumber(entityIn, -1, 1);
-            int l = getRandomNumber(entityIn, -radius, radius);
-            boolean flag = tryToTeleportToLocationInWater(entityIn, navigator, targetPos, targetPos.getX() + j, targetPos.getY() + k, targetPos.getZ() + l);
-            if (flag) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public static boolean tryToTeleportToLocation(LivingEntity entityIn, PathNavigator navigator, BlockPos targetPos, int x, int y, int z) {
-        ChopinLogger.l("x is : " + x + "  and  z is : "  + z);
-        ChopinLogger.l("while tarx is : " + targetPos.getX() + "   and tarz is : " + targetPos.getZ());
         if (Math.abs(x - targetPos.getX()) < 2.0D && Math.abs(z - targetPos.getZ()) < 2.0D) {
             return false;
         } else if (!isTeleportFriendlyBlock(entityIn, new BlockPos(x, y, z), false)) {
-            return false;
-        } else {
-            entityIn.moveTo(x + 0.5F, y, z + 0.5F, entityIn.yRot, entityIn.xRot);
-            navigator.stop();
-            return true;
-        }
-    }
-
-    public static boolean tryToTeleportToLocationInWater(LivingEntity entityIn, PathNavigator navigator, BlockPos targetPos, int x, int y, int z) {
-        if (Math.abs(x - targetPos.getX()) < 2.0D && Math.abs(z - targetPos.getZ()) < 2.0D) {
-            return false;
-        } else if (!isTeleportFriendlyBlockInWater(entityIn, new BlockPos(x, y, z), false)) {
             return false;
         } else {
             entityIn.moveTo(x + 0.5F, y, z + 0.5F, entityIn.yRot, entityIn.xRot);
@@ -102,24 +74,6 @@ public class EntityUtil {
         }
     }
 
-    public static boolean isTeleportFriendlyBlockInWater(LivingEntity entityIn, BlockPos pos, boolean teleportToLeaves) {
-        PathNodeType pathnodetype = WalkNodeProcessor.getBlockPathTypeStatic(entityIn.level, pos.mutable());
-        if (pathnodetype == PathNodeType.WATER) {
-            return true;
-        }
-        
-        if (pathnodetype != PathNodeType.WALKABLE) {
-            return false;
-        } else {
-            BlockState blockstate = entityIn.level.getBlockState(pos.below());
-            if (!teleportToLeaves && blockstate.getBlock() instanceof LeavesBlock) {
-                return false;
-            } else {
-                BlockPos blockpos = pos.subtract(entityIn.blockPosition());
-                return entityIn.level.noCollision(entityIn, entityIn.getBoundingBox().move(blockpos));
-            }
-        }
-    }
 
     public static int getRandomNumber(LivingEntity entityIn, int minIn, int maxIn) {
         return entityIn.getRandom().nextInt(maxIn - minIn + 1) + minIn;

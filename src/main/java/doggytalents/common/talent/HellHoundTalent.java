@@ -3,11 +3,17 @@ package doggytalents.common.talent;
 import doggytalents.api.inferface.AbstractDogEntity;
 import doggytalents.api.registry.Talent;
 import doggytalents.api.registry.TalentInstance;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.FireBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.pathfinding.PathNodeType;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
 public class HellHoundTalent extends TalentInstance {
 
@@ -57,6 +63,13 @@ public class HellHoundTalent extends TalentInstance {
             return ActionResultType.PASS;
         }
 
+        return ActionResultType.PASS;
+    }
+
+    @Override
+    public ActionResultType isBlockSafe(AbstractDogEntity dogIn, BlockPos p) {
+        World l = dogIn.level;
+        if (l.getFluidState(p).is(FluidTags.LAVA) || l.getBlockState(p).getBlock() instanceof FireBlock);
         return ActionResultType.PASS;
     }
 }
