@@ -185,16 +185,8 @@ public interface IDogAlteration {
         return ActionResultType.PASS;
     }
 
-    default ActionResult<MovementController> getMoveControl(AbstractDogEntity dogIn) {
-        return ActionResult.pass(null);
-    }
-
     default ActionResultType canSwim(AbstractDogEntity dogIn) {
         return ActionResultType.PASS;
-    }
-
-    default ActionResult<PathNavigator> getNavigation(AbstractDogEntity dogIn) {
-        return ActionResult.pass(null);
     }
 
     default ActionResultType isBlockSafe(AbstractDogEntity dogIn, BlockPos p) {

@@ -33,30 +33,35 @@ public class EntityUtil {
         return tryToTeleportNearEntity(entityIn, navigator, target.blockPosition(), radius);
     }
 
+    //tp nearest to as possible
     public static boolean tryToTeleportNearEntity(LivingEntity entityIn, PathNavigator navigator, BlockPos targetPos, int radius) {
-        for (int i = 0; i < 10; ++i) {
-            int j = getRandomNumber(entityIn, -radius, radius);
-            int k = getRandomNumber(entityIn, -1, 1);
-            int l = getRandomNumber(entityIn, -radius, radius);
-            boolean flag = tryToTeleportToLocation(entityIn, navigator, targetPos, targetPos.getX() + j, targetPos.getY() + k, targetPos.getZ() + l);
+        
+        BlockPos minpos = null;
+        double mindistSqr = radius;
+        for (BlockPos x : BlockPos.betweenClosed(targetPos.offset(-radius, -1, -radius), targetPos.offset(radius, 1, radius))) {
+            if (Math.abs(x.getX() - targetPos.getX()) < 2.0D && Math.abs(x.getZ() - targetPos.getZ()) < 2.0D) {
+                continue;
+            } 
+            boolean flag = isTeleportFriendlyBlock(entityIn, targetPos, false);
             if (flag) {
-                return true;
+                double distanceToTargetSqr = x.distSqr(targetPos.getX(), targetPos.getY(), targetPos.getZ(), false);
+                if (mindistSqr > distanceToTargetSqr) {
+                    minpos = x;
+                    mindistSqr = distanceToTargetSqr;
+                }
             }
+        }
+        if (minpos != null) {
+            InternalTeleport(entityIn, navigator, minpos);
+            return true;
         }
 
         return false;
     }
 
-    public static boolean tryToTeleportToLocation(LivingEntity entityIn, PathNavigator navigator, BlockPos targetPos, int x, int y, int z) {
-        if (Math.abs(x - targetPos.getX()) < 2.0D && Math.abs(z - targetPos.getZ()) < 2.0D) {
-            return false;
-        } else if (!isTeleportFriendlyBlock(entityIn, new BlockPos(x, y, z), false)) {
-            return false;
-        } else {
-            entityIn.moveTo(x + 0.5F, y, z + 0.5F, entityIn.yRot, entityIn.xRot);
-            navigator.stop();
-            return true;
-        }
+    public static void InternalTeleport(LivingEntity entityIn, PathNavigator navigator, BlockPos targetPos) {
+        entityIn.moveTo(targetPos.getX() + 0.5F, targetPos.getY(), targetPos.getZ() + 0.5F, entityIn.yRot, entityIn.xRot);
+        navigator.stop();
     }
 
     public static boolean isTeleportFriendlyBlock(LivingEntity entityIn, BlockPos pos, boolean teleportToLeaves) {

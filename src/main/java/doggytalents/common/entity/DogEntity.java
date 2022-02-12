@@ -60,7 +60,6 @@ import doggytalents.common.entity.ai.GuardModeGoal;
 import doggytalents.common.entity.ai.MoveToBlockGoal;
 import doggytalents.common.entity.ai.OwnerHurtByTargetGoal;
 import doggytalents.common.entity.ai.OwnerHurtTargetGoal;
-import doggytalents.common.entity.ai.SwimChopinGoal;
 import doggytalents.common.entity.serializers.DimensionDependantArg;
 import doggytalents.common.entity.stats.StatsTracker;
 import doggytalents.common.network.PacketHandler;
@@ -587,22 +586,6 @@ public class DogEntity extends AbstractDogEntity {
             this.alterationsNeedUpdate = false;
         }
 
-        // Navigation & MovementController tick :
-        if (!this.level.isClientSide && this.isPathFinding()) {
-            this.moveControl = this.defaultMoveControl;
-            this.navigation = this.defaultNavigation;
-            for (IDogAlteration di : this.alterations) {
-                ActionResult<MovementController> r1 = di.getMoveControl(this);
-                ActionResult<PathNavigator> r2 = di.getNavigation(this);
-                
-                if (r1.getResult().shouldSwing()) {
-                    this.moveControl = r1.getObject();
-                }
-                if (r2.getResult().shouldSwing()) {
-                    this.navigation = r2.getObject();
-                }
-            }
-        }
 
         //if (ChopinLoggerGUI.onlineGUI != null && ChopinLoggerGUI.onlineGUI.getWatcher("DogDeltaMovement").getWatchee()==this) { 
         //    ChopinLoggerGUI.onlineGUI.getWatcher("DogDeltaMovement").updateValue();
@@ -641,7 +624,8 @@ public class DogEntity extends AbstractDogEntity {
                 return ActionResultType.SUCCESS;
             } else if (stack.getItem() == Items.LAPIS_LAZULI) {
                 if (!this.level.isClientSide) {
-                    this.goalSelector.addGoal(1, new SwimChopinGoal(this));
+                    ChopinLogger.lwn(this, "lapiz clik");
+                    ChopinLogger.lwn(this, "Air supply " + this.getAirSupply());
                 }
                 return ActionResultType.SUCCESS;
             } else if (stack.getItem() == Items.LADDER) {
@@ -706,16 +690,6 @@ public class DogEntity extends AbstractDogEntity {
         }
 
         return actionresulttype;
-    }
-
-    //[chopin] temp func
-    public void setNavigation(PathNavigator pn) {
-        this.navigation = pn;
-    }
-
-    //[chopin] temp func
-    public void setMovementController(MovementController mvctrl) {
-        this.moveControl = mvctrl;
     }
 
     @Override
@@ -874,6 +848,7 @@ public class DogEntity extends AbstractDogEntity {
     }
 
     public boolean canSwim() {
+        if (this.isInSittingPose()) return false;
         for (IDogAlteration d_alt : this.alterations) {
             ActionResultType r = d_alt.canSwim(this);
             if (r.shouldSwing()) return true;
@@ -2577,5 +2552,13 @@ public class DogEntity extends AbstractDogEntity {
     public void stopRiding(){
         if (this.isInWater() && this.getVehicle() instanceof PlayerEntity) return;
         super.stopRiding();
+    }
+
+    public void resetNavigation() {
+        this.navigation = this.defaultNavigation;
+    }
+
+    public void resetMoveControl() {
+        this.moveControl = this.defaultMoveControl;
     }
 }

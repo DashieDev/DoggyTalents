@@ -1,0 +1,524 @@
+package doggytalents.client.screen;
+
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import javax.annotation.Nullable;
+
+import com.mojang.blaze3d.matrix.MatrixStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.AbstractGui;
+import net.minecraft.client.gui.CommandSuggestionHelper;
+import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.NewChatGui;
+import net.minecraft.client.gui.chat.NarratorChatListener;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.renderer.Rectangle2d;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.vector.Vector2f;
+import net.minecraft.util.text.IFormattableTextComponent;
+import net.minecraft.util.text.Style;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+
+@OnlyIn(Dist.CLIENT)
+public class HeelExplicitScreen extends Screen {
+   private String historyBuffer = "";
+   private int historyPos = -1;
+   protected TextFieldWidget input;
+   private CommandSuggestionHelper commandSuggestions;
+
+   public HeelExplicitScreen() {
+      super(new TranslationTextComponent("doggytalents.screen.whistler.heelExplicit"));
+   }
+
+   public static void open() {
+      Minecraft mc = Minecraft.getInstance();
+      mc.setScreen(new HeelExplicitScreen());
+   }
+
+   protected void init() {
+      this.minecraft.keyboardHandler.setSendRepeatsToGui(true);
+      this.historyPos = this.minecraft.gui.getChat().getRecentChat().size();
+      this.input = new TextFieldWidget(this.font, 4, this.height - 12, this.width - 4, 12, new TranslationTextComponent("chat.editBox")) {
+         protected IFormattableTextComponent createNarrationMessage() {
+            return super.createNarrationMessage().append(HeelExplicitScreen.this.commandSuggestions.getNarrationMessage());
+         }
+      };
+      this.input.setMaxLength(256);
+      this.input.setBordered(false);
+      this.input.setResponder(this::onEdited);
+      this.children.add(this.input);
+      this.commandSuggestions = new CommandSuggestionHelper(this.minecraft, this, this.input, this.font, false, false, 1, 10, true, -805306368);
+      this.setInitialFocus(this.input);
+   }
+
+   public void resize(Minecraft p_231152_1_, int p_231152_2_, int p_231152_3_) {
+      String s = this.input.getValue();
+      this.init(p_231152_1_, p_231152_2_, p_231152_3_);
+      this.setChatLine(s);
+   }
+
+   public void removed() {
+      this.minecraft.keyboardHandler.setSendRepeatsToGui(false);
+      this.minecraft.gui.getChat().resetChatScroll();
+   }
+
+   public void tick() {
+      this.input.tick();
+   }
+
+   private void onEdited(String p_212997_1_) {
+      String s = this.input.getValue();
+      this.commandSuggestions.setAllowSuggestions(!s.equals(this.initial));
+   }
+
+   public boolean keyPressed(int p_231046_1_, int p_231046_2_, int p_231046_3_) {
+      if (this.commandSuggestions.keyPressed(p_231046_1_, p_231046_2_, p_231046_3_)) {
+         return true;
+      } else if (super.keyPressed(p_231046_1_, p_231046_2_, p_231046_3_)) {
+         return true;
+      } else if (p_231046_1_ == 256) {
+         this.minecraft.setScreen((Screen)null);
+         return true;
+      } else if (p_231046_1_ != 257 && p_231046_1_ != 335) {
+         if (p_231046_1_ == 265) {
+            this.moveInHistory(-1);
+            return true;
+         } else if (p_231046_1_ == 264) {
+            this.moveInHistory(1);
+            return true;
+         } else if (p_231046_1_ == 266) {
+            this.minecraft.gui.getChat().scrollChat((double)(this.minecraft.gui.getChat().getLinesPerPage() - 1));
+            return true;
+         } else if (p_231046_1_ == 267) {
+            this.minecraft.gui.getChat().scrollChat((double)(-this.minecraft.gui.getChat().getLinesPerPage() + 1));
+            return true;
+         } else {
+            return false;
+         }
+      } else {
+         String s = this.input.getValue().trim();
+         if (!s.isEmpty()) {
+            this.sendMessage(s);
+         }
+
+         this.minecraft.setScreen((Screen)null);
+         return true;
+      }
+   }
+
+   public boolean mouseScrolled(double p_231043_1_, double p_231043_3_, double p_231043_5_) {
+      if (p_231043_5_ > 1.0D) {
+         p_231043_5_ = 1.0D;
+      }
+
+      if (p_231043_5_ < -1.0D) {
+         p_231043_5_ = -1.0D;
+      }
+
+      if (this.commandSuggestions.mouseScrolled(p_231043_5_)) {
+         return true;
+      } else {
+         if (!hasShiftDown()) {
+            p_231043_5_ *= 7.0D;
+         }
+
+         this.minecraft.gui.getChat().scrollChat(p_231043_5_);
+         return true;
+      }
+   }
+
+   public boolean mouseClicked(double p_231044_1_, double p_231044_3_, int p_231044_5_) {
+      if (this.commandSuggestions.mouseClicked((double)((int)p_231044_1_), (double)((int)p_231044_3_), p_231044_5_)) {
+         return true;
+      } else {
+         if (p_231044_5_ == 0) {
+            NewChatGui newchatgui = this.minecraft.gui.getChat();
+            if (newchatgui.handleChatQueueClicked(p_231044_1_, p_231044_3_)) {
+               return true;
+            }
+
+            Style style = newchatgui.getClickedComponentStyleAt(p_231044_1_, p_231044_3_);
+            if (style != null && this.handleComponentClicked(style)) {
+               return true;
+            }
+         }
+
+         return this.input.mouseClicked(p_231044_1_, p_231044_3_, p_231044_5_) ? true : super.mouseClicked(p_231044_1_, p_231044_3_, p_231044_5_);
+      }
+   }
+
+   protected void insertText(String p_231155_1_, boolean p_231155_2_) {
+      if (p_231155_2_) {
+         this.input.setValue(p_231155_1_);
+      } else {
+         this.input.insertText(p_231155_1_);
+      }
+
+   }
+
+   public void moveInHistory(int p_146402_1_) {
+      int i = this.historyPos + p_146402_1_;
+      int j = this.minecraft.gui.getChat().getRecentChat().size();
+      i = MathHelper.clamp(i, 0, j);
+      if (i != this.historyPos) {
+         if (i == j) {
+            this.historyPos = j;
+            this.input.setValue(this.historyBuffer);
+         } else {
+            if (this.historyPos == j) {
+               this.historyBuffer = this.input.getValue();
+            }
+
+            this.input.setValue(this.minecraft.gui.getChat().getRecentChat().get(i));
+            this.commandSuggestions.setAllowSuggestions(false);
+            this.historyPos = i;
+         }
+      }
+   }
+
+   public void render(MatrixStack p_230430_1_, int p_230430_2_, int p_230430_3_, float p_230430_4_) {
+      this.setFocused(this.input);
+      this.input.setFocus(true);
+      fill(p_230430_1_, 2, this.height - 14, this.width - 2, this.height - 2, this.minecraft.options.getBackgroundColor(Integer.MIN_VALUE));
+      this.input.render(p_230430_1_, p_230430_2_, p_230430_3_, p_230430_4_);
+      this.commandSuggestions.render(p_230430_1_, p_230430_2_, p_230430_3_);
+      Style style = this.minecraft.gui.getChat().getClickedComponentStyleAt((double)p_230430_2_, (double)p_230430_3_);
+      if (style != null && style.getHoverEvent() != null) {
+         this.renderComponentHoverEffect(p_230430_1_, style, p_230430_2_, p_230430_3_);
+      }
+
+      super.render(p_230430_1_, p_230430_2_, p_230430_3_, p_230430_4_);
+   }
+
+   public boolean isPauseScreen() {
+      return false;
+   }
+
+   private void setChatLine(String p_208604_1_) {
+      this.input.setValue(p_208604_1_);
+   }
+
+
+   public static class CommandSuggestionHelper {
+      private static final Pattern WHITESPACE_PATTERN = Pattern.compile("(\\s+)");
+      private static final Style UNPARSED_STYLE = Style.EMPTY.withColor(TextFormatting.RED);
+      private static final Style LITERAL_STYLE = Style.EMPTY.withColor(TextFormatting.GRAY);
+      private static final List<Style> ARGUMENT_STYLES = Stream.of(TextFormatting.AQUA, TextFormatting.YELLOW, TextFormatting.GREEN, TextFormatting.LIGHT_PURPLE, TextFormatting.GOLD).map(Style.EMPTY::withColor).collect(ImmutableList.toImmutableList());
+      private final Minecraft minecraft;
+      private final Screen screen;
+      private final TextFieldWidget input;
+      private final FontRenderer font;
+      private final boolean commandsOnly;
+      private final boolean onlyShowIfCursorPastError;
+      private final int lineStartOffset;
+      private final int suggestionLineLimit;
+      private final boolean anchorToBottom;
+      private final int fillColor;
+      //private final List<IReorderingProcessor> commandUsage = Lists.newArrayList();
+      private int commandUsagePosition;
+      private int commandUsageWidth;
+      //private ParseResults<ISuggestionProvider> currentParse;
+      //private CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> pendingSuggestions;
+      private List<String> suggestions;
+      private boolean allowSuggestions;
+      private boolean keepSuggestions;
+
+      public CommandSuggestionHelper(Minecraft p_i225919_1_, Screen p_i225919_2_, TextFieldWidget p_i225919_3_, FontRenderer p_i225919_4_, boolean p_i225919_5_, boolean p_i225919_6_, int p_i225919_7_, int p_i225919_8_, boolean p_i225919_9_, int p_i225919_10_) {
+         this.minecraft = p_i225919_1_;
+         this.screen = p_i225919_2_;
+         this.input = p_i225919_3_;
+         this.font = p_i225919_4_;
+         this.commandsOnly = p_i225919_5_;
+         this.onlyShowIfCursorPastError = p_i225919_6_;
+         this.lineStartOffset = p_i225919_7_;
+         this.suggestionLineLimit = p_i225919_8_;
+         this.anchorToBottom = p_i225919_9_;
+         this.fillColor = p_i225919_10_;
+         p_i225919_3_.setFormatter(this::formatChat);
+      }
+
+      public void setAllowSuggestions(boolean p_228124_1_) {
+         this.allowSuggestions = p_228124_1_;
+         if (!p_228124_1_) {
+            this.suggestions = null;
+         }
+
+      }
+
+      public boolean keyPressed(int p_228115_1_, int p_228115_2_, int p_228115_3_) {
+         if (this.suggestions != null && this.suggestions.keyPressed(p_228115_1_, p_228115_2_, p_228115_3_)) {
+            return true;
+         } else if (this.screen.getFocused() == this.input && p_228115_1_ == 258) {
+            this.showSuggestions(true);
+            return true;
+         } else {
+            return false;
+         }
+      }
+
+      public boolean mouseScrolled(double p_228112_1_) {
+         return this.suggestions != null && this.suggestions.mouseScrolled(MathHelper.clamp(p_228112_1_, -1.0D, 1.0D));
+      }
+
+      public boolean mouseClicked(double p_228113_1_, double p_228113_3_, int p_228113_5_) {
+         return this.suggestions != null && this.suggestions.mouseClicked((int)p_228113_1_, (int)p_228113_3_, p_228113_5_);
+      }
+
+      public void showSuggestions(boolean p_228128_1_) {
+         /*
+         if (this.pendingSuggestions != null && this.pendingSuggestions.isDone()) {
+            com.mojang.brigadier.suggestion.Suggestions suggestions = this.pendingSuggestions.join();
+            if (!suggestions.isEmpty()) {
+               int i = 0;
+
+               for(Suggestion suggestion : suggestions.getList()) {
+                  i = Math.max(i, this.font.width(suggestion.getText()));
+               }
+
+               int j = MathHelper.clamp(this.input.getScreenX(suggestions.getRange().getStart()), 0, this.input.getScreenX(0) + this.input.getInnerWidth() - i);
+               int k = this.anchorToBottom ? this.screen.height - 12 : 72;
+               this.suggestions = new CommandSuggestionHelper.Suggestions(j, k, i, this.sortSuggestions(suggestions), p_228128_1_);
+            }
+         }*/
+
+      }
+
+      private List<Suggestion> sortSuggestions(com.mojang.brigadier.suggestion.Suggestions p_241575_1_) {
+         String s = this.input.getValue().substring(0, this.input.getCursorPosition());
+         int i = getLastWordIndex(s);
+         String s1 = s.substring(i).toLowerCase(Locale.ROOT);
+         List<Suggestion> list = Lists.newArrayList();
+         List<Suggestion> list1 = Lists.newArrayList();
+
+         for(Suggestion suggestion : p_241575_1_.getList()) {
+            if (!suggestion.getText().startsWith(s1) && !suggestion.getText().startsWith("minecraft:" + s1)) {
+               list1.add(suggestion);
+            } else {
+               list.add(suggestion);
+            }
+         }
+
+         list.addAll(list1);
+         return list;
+      }
+
+      
+
+      /*
+      private static int getLastWordIndex(String p_228121_0_) {
+         if (Strings.isNullOrEmpty(p_228121_0_)) {
+            return 0;
+         } else {
+            int i = 0;
+
+            for(Matcher matcher = WHITESPACE_PATTERN.matcher(p_228121_0_); matcher.find(); i = matcher.end()) {
+            }
+
+            return i;
+         }
+      }
+      */
+
+
+      @Nullable
+      private static String calculateSuggestionSuffix(String p_228127_0_, String p_228127_1_) {
+         return p_228127_1_.startsWith(p_228127_0_) ? p_228127_1_.substring(p_228127_0_.length()) : null;
+      }
+
+
+      public void render(MatrixStack p_238500_1_, int p_238500_2_, int p_238500_3_) {
+         if (this.suggestions != null) {
+            this.suggestions.render(p_238500_1_, p_238500_2_, p_238500_3_);
+         } else { dsfdskfldskldsfd
+            /*
+            int i = 0;
+
+            for(IReorderingProcessor ireorderingprocessor : this.commandUsage) {
+               int j = this.anchorToBottom ? this.screen.height - 14 - 13 - 12 * i : 72 + 12 * i;
+               AbstractGui.fill(p_238500_1_, this.commandUsagePosition - 1, j, this.commandUsagePosition + this.commandUsageWidth + 1, j + 12, this.fillColor);
+               this.font.drawShadow(p_238500_1_, ireorderingprocessor, (float)this.commandUsagePosition, (float)(j + 2), -1);
+               ++i;
+            }
+            */
+         }
+
+      }
+
+      @OnlyIn(Dist.CLIENT)
+      public class Suggestions {
+         private final Rectangle2d rect;
+         private final String originalContents;
+         private final List<String> suggestionList;
+         private int offset;
+         private int current;
+         private Vector2f lastMouse = Vector2f.ZERO;
+         private boolean tabCycles;
+         private int lastNarratedEntry;
+
+         private Suggestions(int p_i241247_2_, int p_i241247_3_, int p_i241247_4_, List<Suggestion> p_i241247_5_, boolean p_i241247_6_) {
+            int i = p_i241247_2_ - 1;
+            int j = CommandSuggestionHelper.this.anchorToBottom ? p_i241247_3_ - 3 - Math.min(p_i241247_5_.size(), CommandSuggestionHelper.this.suggestionLineLimit) * 12 : p_i241247_3_;
+            this.rect = new Rectangle2d(i, j, p_i241247_4_ + 1, Math.min(p_i241247_5_.size(), CommandSuggestionHelper.this.suggestionLineLimit) * 12);
+            this.originalContents = CommandSuggestionHelper.this.input.getValue();
+            this.lastNarratedEntry = p_i241247_6_ ? -1 : 0;
+            this.suggestionList = p_i241247_5_;
+            this.select(0);
+         }
+
+
+
+         public void render(MatrixStack p_238501_1_, int p_238501_2_, int p_238501_3_) {
+            int i = Math.min(this.suggestionList.size(), CommandSuggestionHelper.this.suggestionLineLimit);
+            int j = -5592406;
+            boolean flag = this.offset > 0;
+            boolean flag1 = this.suggestionList.size() > this.offset + i;
+            boolean flag2 = flag || flag1;
+            boolean flag3 = this.lastMouse.x != (float)p_238501_2_ || this.lastMouse.y != (float)p_238501_3_;
+            if (flag3) {
+               this.lastMouse = new Vector2f((float)p_238501_2_, (float)p_238501_3_);
+            }
+
+            if (flag2) {
+               AbstractGui.fill(p_238501_1_, this.rect.getX(), this.rect.getY() - 1, this.rect.getX() + this.rect.getWidth(), this.rect.getY(), CommandSuggestionHelper.this.fillColor);
+               AbstractGui.fill(p_238501_1_, this.rect.getX(), this.rect.getY() + this.rect.getHeight(), this.rect.getX() + this.rect.getWidth(), this.rect.getY() + this.rect.getHeight() + 1, CommandSuggestionHelper.this.fillColor);
+               if (flag) {
+                  for(int k = 0; k < this.rect.getWidth(); ++k) {
+                     if (k % 2 == 0) {
+                        AbstractGui.fill(p_238501_1_, this.rect.getX() + k, this.rect.getY() - 1, this.rect.getX() + k + 1, this.rect.getY(), -1);
+                     }
+                  }
+               }
+
+               if (flag1) {
+                  for(int i1 = 0; i1 < this.rect.getWidth(); ++i1) {
+                     if (i1 % 2 == 0) {
+                        AbstractGui.fill(p_238501_1_, this.rect.getX() + i1, this.rect.getY() + this.rect.getHeight(), this.rect.getX() + i1 + 1, this.rect.getY() + this.rect.getHeight() + 1, -1);
+                     }
+                  }
+               }
+            }
+
+            boolean flag4 = false;
+
+            for(int l = 0; l < i; ++l) {
+               Suggestion suggestion = this.suggestionList.get(l + this.offset);
+               AbstractGui.fill(p_238501_1_, this.rect.getX(), this.rect.getY() + 12 * l, this.rect.getX() + this.rect.getWidth(), this.rect.getY() + 12 * l + 12, CommandSuggestionHelper.this.fillColor);
+               if (p_238501_2_ > this.rect.getX() && p_238501_2_ < this.rect.getX() + this.rect.getWidth() && p_238501_3_ > this.rect.getY() + 12 * l && p_238501_3_ < this.rect.getY() + 12 * l + 12) {
+                  if (flag3) {
+                     this.select(l + this.offset);
+                  }
+
+                  flag4 = true;
+               }
+
+               CommandSuggestionHelper.this.font.drawShadow(p_238501_1_, suggestion.getText(), (float)(this.rect.getX() + 1), (float)(this.rect.getY() + 2 + 12 * l), l + this.offset == this.current ? -256 : -5592406);
+            }
+
+            if (flag4) {
+               Message message = this.suggestionList.get(this.current).getTooltip();
+               if (message != null) {
+                  CommandSuggestionHelper.this.screen.renderTooltip(p_238501_1_, TextComponentUtils.fromMessage(message), p_238501_2_, p_238501_3_);
+               }
+            }
+
+         }
+
+         public boolean mouseClicked(int p_228150_1_, int p_228150_2_, int p_228150_3_) {
+            if (!this.rect.contains(p_228150_1_, p_228150_2_)) {
+               return false;
+            } else {
+               int i = (p_228150_2_ - this.rect.getY()) / 12 + this.offset;
+               if (i >= 0 && i < this.suggestionList.size()) {
+                  this.select(i);
+                  this.useSuggestion();
+               }
+
+               return true;
+            }
+         }
+
+         public boolean mouseScrolled(double p_228147_1_) {
+            int i = (int)(CommandSuggestionHelper.this.minecraft.mouseHandler.xpos() * (double)CommandSuggestionHelper.this.minecraft.getWindow().getGuiScaledWidth() / (double)CommandSuggestionHelper.this.minecraft.getWindow().getScreenWidth());
+            int j = (int)(CommandSuggestionHelper.this.minecraft.mouseHandler.ypos() * (double)CommandSuggestionHelper.this.minecraft.getWindow().getGuiScaledHeight() / (double)CommandSuggestionHelper.this.minecraft.getWindow().getScreenHeight());
+            if (this.rect.contains(i, j)) {
+               this.offset = MathHelper.clamp((int)((double)this.offset - p_228147_1_), 0, Math.max(this.suggestionList.size() - CommandSuggestionHelper.this.suggestionLineLimit, 0));
+               return true;
+            } else {
+               return false;
+            }
+         }
+
+         public boolean keyPressed(int p_228154_1_, int p_228154_2_, int p_228154_3_) {
+            if (p_228154_1_ == 265) {
+               this.cycle(-1);
+               this.tabCycles = false;
+               return true;
+            } else if (p_228154_1_ == 264) {
+               this.cycle(1);
+               this.tabCycles = false;
+               return true;
+            } else if (p_228154_1_ == 258) {
+               if (this.tabCycles) {
+                  this.cycle(Screen.hasShiftDown() ? -1 : 1);
+               }
+
+               this.useSuggestion();
+               return true;
+            } else if (p_228154_1_ == 256) {
+               this.hide();
+               return true;
+            } else {
+               return false;
+            }
+         }
+
+         public void cycle(int p_228148_1_) {
+            this.select(this.current + p_228148_1_);
+            int i = this.offset;
+            int j = this.offset + CommandSuggestionHelper.this.suggestionLineLimit - 1;
+            if (this.current < i) {
+               this.offset = MathHelper.clamp(this.current, 0, Math.max(this.suggestionList.size() - CommandSuggestionHelper.this.suggestionLineLimit, 0));
+            } else if (this.current > j) {
+               this.offset = MathHelper.clamp(this.current + CommandSuggestionHelper.this.lineStartOffset - CommandSuggestionHelper.this.suggestionLineLimit, 0, Math.max(this.suggestionList.size() - CommandSuggestionHelper.this.suggestionLineLimit, 0));
+            }
+
+         }
+
+         public void select(int p_228153_1_) {
+            this.current = p_228153_1_;
+            if (this.current < 0) {
+               this.current += this.suggestionList.size();
+            }
+
+            if (this.current >= this.suggestionList.size()) {
+               this.current -= this.suggestionList.size();
+            }
+
+            Suggestion suggestion = this.suggestionList.get(this.current);
+            CommandSuggestionHelper.this.input.setSuggestion(CommandSuggestionHelper.calculateSuggestionSuffix(CommandSuggestionHelper.this.input.getValue(), suggestion.apply(this.originalContents)));
+
+         }
+
+         public void useSuggestion() {
+            Suggestion suggestion = this.suggestionList.get(this.current);
+            CommandSuggestionHelper.this.keepSuggestions = true;
+            CommandSuggestionHelper.this.input.setValue(suggestion.apply(this.originalContents));
+            int i = suggestion.getRange().getStart() + suggestion.getText().length();
+            CommandSuggestionHelper.this.input.setCursorPosition(i);
+            CommandSuggestionHelper.this.input.setHighlightPos(i);
+            this.select(this.current);
+            CommandSuggestionHelper.this.keepSuggestions = false;
+            this.tabCycles = true;
+         }
+         
+         public void hide() {
+            CommandSuggestionHelper.this.suggestions = null;
+         }
+      }
+}

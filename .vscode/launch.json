@@ -16,14 +16,14 @@
         "MCP_VERSION": "20210115.111550",
         "FORGE_VERSION": "36.2.0",
         "assetIndex": "1.16",
-        "assetDirectory": "C:\\Users\\GIGABYTE\\.gradle\\caches\\forge_gradle\\assets",
+        "assetDirectory": "C:\\Users\\lamti\\.gradle\\caches\\forge_gradle\\assets",
         "nativesDirectory": "${workspaceFolder}\\build\\natives",
         "FORGE_GROUP": "net.minecraftforge",
         "target": "fmluserdevclient",
         "MC_VERSION": "1.16.5"
       },
       "console": "internalConsole",
-      "outputCapture": "std"
+      "outputCapture" : "std"
     },
     {
       "type": "java",
@@ -33,14 +33,14 @@
       "projectName": "DoggyTalents",
       "cwd": "${workspaceFolder}\\run",
       "vmArgs": "-Dforge.logging.console.level\u003ddebug -XX:+IgnoreUnrecognizedVMOptions --add-exports\u003djava.base/sun.security.util\u003dALL-UNNAMED --add-exports\u003djdk.naming.dns/com.sun.jndi.dns\u003djava.naming --add-opens\u003djava.base/java.util.jar\u003dALL-UNNAMED",
-      "args": "--mod doggytalents --all --output \"C:\\Users\\GIGABYTE\\Development\\Visual Studio Code\\Java\\MCMods\\DTCustom\\DoggyTalents\\src\\generated\\resources\" --existing \"C:\\Users\\GIGABYTE\\Development\\Visual Studio Code\\Java\\MCMods\\DTCustom\\DoggyTalents\\src\\main\\resources\"",
+      "args": "--mod doggytalents --all --output \"C:\\Users\\lamti\\Documents\\Java\\DTCustom\\DoggyTalents\\src\\generated\\resources\" --existing \"C:\\Users\\lamti\\Documents\\Java\\DTCustom\\DoggyTalents\\src\\main\\resources\"",
       "env": {
         "MOD_CLASSES": "doggytalents%%${workspaceFolder}\\bin\\main;doggytalents%%${workspaceFolder}\\bin\\main;doggytalents%%${workspaceFolder}\\bin\\api;doggytalents%%${workspaceFolder}\\bin\\api",
         "MCP_MAPPINGS": "official_1.16.5",
         "MCP_VERSION": "20210115.111550",
         "FORGE_VERSION": "36.2.0",
         "assetIndex": "1.16",
-        "assetDirectory": "C:\\Users\\GIGABYTE\\.gradle\\caches\\forge_gradle\\assets",
+        "assetDirectory": "C:\\Users\\lamti\\.gradle\\caches\\forge_gradle\\assets",
         "FORGE_GROUP": "net.minecraftforge",
         "target": "fmluserdevdata",
         "MC_VERSION": "1.16.5"

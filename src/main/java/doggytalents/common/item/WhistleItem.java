@@ -8,6 +8,7 @@ import doggytalents.DoggySounds;
 import doggytalents.DoggyTalents;
 import doggytalents.api.DoggyTalentsAPI;
 import doggytalents.api.feature.EnumMode;
+import doggytalents.client.screen.HeelExplicitScreen;
 import doggytalents.common.config.ConfigValues;
 import doggytalents.common.entity.DogEntity;
 import doggytalents.common.entity.DoggyBeamEntity;
@@ -243,8 +244,8 @@ public class WhistleItem extends Item {
                 }
 
                 return new ActionResult<>(ActionResultType.SUCCESS, player.getItemInHand(hand));
-            } else if (mode == 7 && !dogsList.isEmpty() && !player.level.isClientSide)  { //Debug chopin
-
+            } else if (mode == 7 && !dogsList.isEmpty() && player.level.isClientSide)  { //Debug chopin
+                HeelExplicitScreen.open(null);
                 return new ActionResult<>(ActionResultType.SUCCESS, player.getItemInHand(hand));
             }
             //world.playSound(null, player.getPosition(), DoggySounds.WHISTLE_LONG, SoundCategory.PLAYERS, 0.8F, 0.8F + world.rand.nextFloat() * 0.2F);

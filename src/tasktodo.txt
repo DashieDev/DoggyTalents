@@ -59,4 +59,10 @@ Make the getNavigation or getMovementController check from the alterations
     and return the one who meets the requirements
 Find dog through sound Liszt Totentanz
 
+Whistler 2 mode : 
+    Stop : Stop attacking entity 
+    Heel Specific : Make a certain dog heel
+
+When joining world, head dog dismount still keep in sitting pose no maatter what even when dropped into water
+
 [SOLVED] [BASIC_JAVA] DogEntity -> is class default fields got init ? 

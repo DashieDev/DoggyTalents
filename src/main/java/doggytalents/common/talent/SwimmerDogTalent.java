@@ -1,10 +1,12 @@
 package doggytalents.common.talent;
 
+import java.util.EnumSet;
 import java.util.UUID;
 
 import doggytalents.api.inferface.AbstractDogEntity;
 import doggytalents.api.registry.Talent;
 import doggytalents.api.registry.TalentInstance;
+import doggytalents.common.entity.DogEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
@@ -13,6 +15,7 @@ import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier.Operation;
 import net.minecraft.entity.ai.controller.MovementController;
+import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.pathfinding.SwimmerPathNavigator;
@@ -28,10 +31,11 @@ import net.minecraftforge.common.ForgeMod;
 
 public class SwimmerDogTalent extends TalentInstance {
 
-    SwimmerDogMovementController mv_ctrl;
-    SwimmerPathNavigator navigator;
+    private SwimmerDogMovementController mv_ctrl;
+    private SwimmerPathNavigator navigator;
+    private SwimmerDogGoal goal;
     private static final UUID SWIM_BOOST_ID = UUID.fromString("50671e42-1ded-4f97-9e2b-78bbeb1e8772");
-    //TODO add ai goal to follow owner through water
+    //TODO Make dog swim up to get air when low on air supply
     //I think the owner of the alteration should be passed in the constructor and set as a field for
     //easier access, the alteration must have an owner, right ?
 
@@ -46,6 +50,10 @@ public class SwimmerDogTalent extends TalentInstance {
         );
         d.setPathfindingMalus(PathNodeType.WATER_BORDER, 0);
         d.setPathfindingMalus(PathNodeType.WATER, 0);
+        this.mv_ctrl = new SwimmerDogMovementController(d);
+        this.navigator = new SwimmerPathNavigator(d, d.level);
+        this.goal = new SwimmerDogGoal((DogEntity)d, this);
+        d.goalSelector.addGoal(10, this.goal);
     }
 
     @Override
@@ -53,6 +61,7 @@ public class SwimmerDogTalent extends TalentInstance {
         d.removeAttributeModifier(ForgeMod.SWIM_SPEED.get(), SWIM_BOOST_ID);
         d.setPathfindingMalus(PathNodeType.WATER_BORDER, 8);
         d.setPathfindingMalus(PathNodeType.WATER, 8);
+        d.goalSelector.removeGoal(this.goal);
     }
 
     @Override
@@ -94,6 +103,7 @@ public class SwimmerDogTalent extends TalentInstance {
         return ActionResult.pass(currentAir);
     }
 
+    /*
     @Override
     public ActionResult<MovementController> getMoveControl(AbstractDogEntity dogIn) {
         if (dogIn.isInWater() && !this.checkSurroundingForLand(dogIn, dogIn.blockPosition())) {
@@ -104,11 +114,14 @@ public class SwimmerDogTalent extends TalentInstance {
         }
         return ActionResult.pass(null);
     }
+    */
 
     @Override
     public ActionResultType canSwim(AbstractDogEntity dogIn) {
         return ActionResultType.SUCCESS;
     }
+
+    /*
 
     @Override
     public ActionResult<PathNavigator> getNavigation(AbstractDogEntity dogIn) {
@@ -120,20 +133,57 @@ public class SwimmerDogTalent extends TalentInstance {
         }
         return ActionResult.pass(null);
     }
+    */
 
     @Override
     public ActionResultType isBlockSafe(AbstractDogEntity dogIn, BlockPos p) {
-        if (dogIn.level.getFluidState(p).is(FluidTags.WATER)) return ActionResultType.SUCCESS;
+        if (dogIn.level.getFluidState(p).is(FluidTags.WATER) && dogIn.getAirSupply() >= 50) return ActionResultType.SUCCESS;
         return ActionResultType.PASS;
     }
 
-    private boolean checkSurroundingForLand(AbstractDogEntity dogIn, BlockPos p) {
-        for (BlockPos dp : BlockPos.betweenClosed(p.offset(-1, -1, -1), p.offset(1, 1, 1))) {
-            PathNodeType pn = WalkNodeProcessor.getBlockPathTypeStatic(dogIn.level, dp.mutable());
-            if (pn == PathNodeType.WALKABLE || pn == PathNodeType.WATER_BORDER) return true;
+    public static class SwimmerDogGoal extends Goal {
+
+        private DogEntity dog;
+        private SwimmerDogTalent talent;
+
+        public SwimmerDogGoal(DogEntity d, SwimmerDogTalent t) {
+            this.dog = d;
+            this.talent = t; 
         }
-        return false;
+        
+        @Override
+        public boolean canUse() {
+            return this.dog.isInWater() && !this.checkSurroundingForLand(this.dog, this.dog.blockPosition());
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return this.canUse();
+        }
+
+        @Override
+        public void start() {
+            this.dog.setNavigation(talent.navigator);
+            this.dog.setMoveControl(talent.mv_ctrl);
+        }
+
+        @Override
+        public void stop() {
+            this.dog.resetMoveControl();
+            this.dog.resetNavigation();
+        }
+
+        private boolean checkSurroundingForLand(DogEntity dogIn, BlockPos p) {
+            for (BlockPos dp : BlockPos.betweenClosed(p.offset(-1, -1, -1), p.offset(1, 1, 1))) {
+                PathNodeType pn = WalkNodeProcessor.getBlockPathTypeStatic(dogIn.level, dp.mutable());
+                if (pn == PathNodeType.WALKABLE || pn == PathNodeType.WATER_BORDER) return true;
+            }
+            return false;
+        }
+        
     }
+
+    
 
     static class SwimmerDogMovementController extends MovementController {
         private final AbstractDogEntity dog;
@@ -146,18 +196,15 @@ public class SwimmerDogTalent extends TalentInstance {
         
         @Override
         public void tick() {
-           if (this.dog.isEyeInFluid(FluidTags.WATER)) {
-              this.dog.setDeltaMovement(this.dog.getDeltaMovement().add(0.0D, 0.0025D, 0.0D));
-           }
+            //FLoat
+            if (this.dog.isEyeInFluid(FluidTags.WATER)) {
+              this.dog.setDeltaMovement(this.dog.getDeltaMovement().add(0.0D, 0.007D, 0.0D));
+            }
            
            //When dog has target pos and wants to move to it
            if (this.operation == MovementController.Action.MOVE_TO && !this.dog.getNavigation().isDone()) {
 
-                //set the scale of the movement vector
-                float s = (float)(this.speedModifier * this.dog.getAttributeValue(Attributes.MOVEMENT_SPEED));
-                this.dog.setSpeed(MathHelper.lerp(0.125F, this.dog.getSpeed(), s));
-
-                //set the direction of the movement vector
+                //get deltas
                 double dx = this.wantedX - this.dog.getX();
                 double dy = this.wantedY - this.dog.getY();
                 double dz = this.wantedZ - this.dog.getZ();
@@ -168,18 +215,26 @@ public class SwimmerDogTalent extends TalentInstance {
                 }
                 */
 
-                // Body&Head Rotation Processing 
-                float f1 = (float)(MathHelper.atan2(dz, dx) * (double)(180F / (float)Math.PI)) - 90.0F;
-                float ydl = MathHelper.sqrt(dx * dx + dz * dz);
-                float f2 = (float)(MathHelper.atan2(dy, ydl) * (double)(180F / (float)Math.PI));
-                this.dog.yRot = this.rotlerp(this.dog.yRot, f1, 90.0F);
+                // Set Move Direction for the XZ plane
+                float yrot = (float)(MathHelper.atan2(dz, dx) * (double)(180F / (float)Math.PI)) - 90.0F;  
+                this.dog.yRot = this.rotlerp(this.dog.yRot, yrot, 90.0F);
                 this.dog.yBodyRot = this.dog.yRot;
-                this.dog.xRot = this.rotlerp(this.dog.xRot, f2, 90.0f);
+
+                //Set Move Direction for the Y plane
+                float ydl = MathHelper.sqrt(dx * dx + dz * dz);
+                float xrot = (float)(MathHelper.atan2(dy, ydl) * (double)(180F / (float)Math.PI));
+                this.dog.xRot = this.rotlerp(this.dog.xRot, xrot, 90.0f);
+
+                //Set Move Speed
+                float s = (float)(this.speedModifier * this.dog.getAttributeValue(Attributes.MOVEMENT_SPEED));
+                this.dog.setSpeed(s);
+
+                //Move with ratio of the dir vector
                 this.dog.setYya(this.dog.getSpeed()*MathHelper.sin(this.dog.xRot*(((float)Math.PI)/180F)));
                 this.dog.setZza(this.dog.getSpeed()*MathHelper.cos(this.dog.xRot*(((float)Math.PI)/180F)));
+
             } else {
                 this.dog.setSpeed(0.0F);
-                this.dog.setXxa(0.0F);
                 this.dog.setZza(0.0F);
                 this.dog.setYya(0.0F);
             }        
