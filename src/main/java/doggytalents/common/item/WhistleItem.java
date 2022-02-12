@@ -202,6 +202,8 @@ public class WhistleItem extends Item {
                         if (cdDogs.isEmpty()) {
                             player.displayClientMessage(new TranslationTextComponent("talent.doggytalents.roaring_gale.cooldown"), true);
                         } else {
+                            boolean anyHits = false;
+
                             for (DogEntity dog : dogsList) {
                                 int level = dog.getLevel(DoggyTalents.ROARING_GALE);
                                 int roarCooldown = dog.tickCount;   // get the time
@@ -238,6 +240,10 @@ public class WhistleItem extends Item {
 
                                 dog.setData(RoaringGaleTalent.COOLDOWN, roarCooldown); // RoaringGaleTalent.COOLDOWN is currently storing the deadline of the cooldown according to DogEntity.tickCount
                             
+                            }
+
+                            if (!anyHits) {
+                                player.displayClientMessage(new TranslationTextComponent("talent.doggytalents.roaring_gale.miss"), true);
                             }
                         }
                     }
