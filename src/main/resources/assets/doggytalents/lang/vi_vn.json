@@ -182,6 +182,10 @@
    "dog.gender.unisex.subject": "cún",
    "dog.gender.unisex.title": "cún",
 
+   "dog.msg.low_hunger.0" : "%s: Woof, woof, wooooof? Woof, wooooof. (Chúng ta kiếm gì bỏ bụng nào, em đói rồi)",
+   "dog.msg.low_hunger.1" : "%s: Woof woooof (Cho em ăn đi)",
+   "dog.msg.low_hunger.2" : "%s: Woof woof woooof wooof? (Mình ăn được chưa?)",
+
    "entity.doggytalents.dog": "Cún",
    "entity.doggytalents.dog.unknown_owner": "Chủ không xác định",
    "entity.doggytalents.dog.untamed": "Không có chủ",

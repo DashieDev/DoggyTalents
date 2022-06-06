@@ -54,6 +54,7 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
@@ -142,6 +143,13 @@ public class Dog extends AbstractDog {
 
     protected boolean dogJumping;
     protected float jumpPower;
+
+
+    protected boolean isLowHunger;
+    protected boolean isZeroHunger;
+    protected int hungerDamageTick;
+    
+    private static final UUID HUNGER_MOVEMENT = UUID.fromString("50671f49-1dfd-4397-242b-78bb6b178115");
 
     protected BlockPos targetBlock;
 
@@ -397,6 +405,7 @@ public class Dog extends AbstractDog {
                     this.setDogHunger(this.getDogHunger() - 1);
                     this.hungerTick -= 400;
                 }
+                if (this.isZeroHunger) this.handleZeroHunger();
             }
 
             this.prevHealingTick = this.healingTick;
@@ -1718,6 +1727,7 @@ public class Dog extends AbstractDog {
 
     private void setHungerDirectly(float hunger) {
         this.entityData.set(HUNGER_INT, hunger);
+        this.updateLowHunger();
     }
 
     public boolean hasCustomSkin() {
@@ -2231,4 +2241,66 @@ public class Dog extends AbstractDog {
     public BlockPos getTargetBlock() {
         return this.targetBlock;
     }
+
+    private void hungerHighToLow() {
+        this.setAttributeModifier(Attributes.MOVEMENT_SPEED, HUNGER_MOVEMENT, (d, u) -> 
+            new AttributeModifier(u, "Hunger Slowness", -0.35f, Operation.MULTIPLY_TOTAL) // this operation is mutiply by 1 + x
+        );
+        
+        this.getOwner().sendMessage(new TranslatableComponent("dog.msg.low_hunger." + this.random.nextInt(3), this.getName()), this.getUUID());
+        this.playSound(SoundEvents.WOLF_WHINE, this.getSoundVolume(), this.getVoicePitch());
+     }
+    
+     private void hungerLowToHigh() {
+        this.isLowHunger = false; 
+        this.removeAttributeModifier(Attributes.MOVEMENT_SPEED, HUNGER_MOVEMENT);
+     }
+
+     public boolean isLowHunger() {
+        return this.isLowHunger;
+
+     }
+
+     public void updateLowHunger() {
+        if (this.isLowHunger) {
+            if (this.getDogHunger() > 20) {
+                this.isLowHunger = false;
+                this.hungerLowToHigh();
+            }
+        } else {
+            if (this.getDogHunger() <= 20) {
+                this.isLowHunger = true;
+                this.hungerHighToLow();
+            }
+        }
+        this.isZeroHunger = this.getDogHunger() == 0;
+     }
+
+    protected void handleZeroHunger() {
+        ++this.hungerDamageTick; 
+        int hurt_interval = -1; boolean hurt_last_health = false;
+        switch (this.level.getDifficulty()) {
+            case EASY : {
+                hurt_interval =100; break; 
+            }
+            case NORMAL : {
+                hurt_interval =75; break;
+            }
+            case HARD : {
+                hurt_interval = 50; hurt_last_health = true; break;
+            }
+            default : {
+                hurt_interval = -1; break;
+            }
+        }
+
+        //Sorry, i think i need some food...
+        //var food beg
+        if (hurt_interval >= 0 && ++this.hungerDamageTick >= hurt_interval && (hurt_last_health || this.getHealth() > 1f))  {
+            this.hurt(DamageSource.STARVE, 0.5f);
+            this.hungerDamageTick = 0;
+        } 
+    }
+
 }
+
